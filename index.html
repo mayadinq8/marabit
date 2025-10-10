@@ -151,6 +151,17 @@
             border-color: #e0a800;
         }
         
+        .toolbar-btn.info {
+            background: #17a2b8;
+            color: white;
+            border-color: #17a2b8;
+        }
+        
+        .toolbar-btn.info:hover {
+            background: #138496;
+            border-color: #138496;
+        }
+        
         .player-name-btn {
             background: #f8f9fa;
             border: 2px solid #28a745;
@@ -224,7 +235,18 @@
         }
         
         .card.neutral {
-            background: #6c757d;
+            background: #f5deb3;
+            color: #000000;
+        }
+        
+        .card.spy-view.neutral {
+            background: #f5deb3;
+            color: #000000;
+        }
+        
+        .card.spy-view {
+            color: white;
+            font-weight: bold;
         }
         
         .hand-btn {
@@ -433,6 +455,14 @@
             font-weight: bold;
             margin-top: 10px;
         }
+
+        .end-turn-area {
+            background: rgba(255,255,255,0.95);
+            padding: 15px;
+            border-radius: 15px;
+            margin-bottom: 10px;
+            text-align: center;
+        }
         
         /* حالة اللعبة */
         .game-status {
@@ -472,7 +502,6 @@
             padding: 15px;
             max-height: 70vh;
             overflow-y: auto;
-            /* سيتم تحديد الموقع بواسطة JavaScript */
         }
         
         .dropdown-content.show {
@@ -779,41 +808,6 @@
             <button class="start-btn" onclick="startGame()">بدء اللعبة</button>
         </div>
 
-        <!-- شاشة اختيار الفريق -->
-        <div class="team-selection-screen" id="teamSelectionScreen" style="display: none;">
-            <div class="start-screen">
-                <h2 class="game-title" style="font-size: 2rem;">اختر فريقك</h2>
-                <div id="roomPlayersInfo" style="background: #f8f9fa; padding: 20px; border-radius: 15px; margin-bottom: 30px; max-width: 500px; width: 100%;"></div>
-                
-                <div style="display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; margin-bottom: 30px;">
-                    <!-- الفريق الأحمر -->
-                    <div class="team-choice" style="background: #ffebee; border: 3px solid #f44336; border-radius: 15px; padding: 20px; min-width: 200px; cursor: pointer; transition: all 0.3s;" onclick="selectTeamAndRole('red', 'player')">
-                        <div style="font-size: 1.5rem; margin-bottom: 10px;">🔴</div>
-                        <div style="font-weight: bold; color: #d32f2f; margin-bottom: 5px;">الفريق الأحمر</div>
-                        <div style="font-size: 0.9rem; color: #666;">انضم كلاعب</div>
-                        <div id="redTeamCount" style="font-size: 0.8rem; color: #999; margin-top: 5px;"></div>
-                    </div>
-                    
-                    <!-- الفريق الأزرق -->
-                    <div class="team-choice" style="background: #e3f2fd; border: 3px solid #2196f3; border-radius: 15px; padding: 20px; min-width: 200px; cursor: pointer; transition: all 0.3s;" onclick="selectTeamAndRole('blue', 'player')">
-                        <div style="font-size: 1.5rem; margin-bottom: 10px;">🔵</div>
-                        <div style="font-weight: bold; color: #1976d2; margin-bottom: 5px;">الفريق الأزرق</div>
-                        <div style="font-size: 0.9rem; color: #666;">انضم كلاعب</div>
-                        <div id="blueTeamCount" style="font-size: 0.8rem; color: #999; margin-top: 5px;"></div>
-                    </div>
-                </div>
-                
-                <div style="margin-bottom: 20px; font-weight: bold; color: #666;">أو انضم كسباي:</div>
-                
-                <div style="display: flex; gap: 15px; flex-wrap: wrap; justify-content: center; margin-bottom: 30px;">
-                    <button class="start-btn" style="background: linear-gradient(45deg, #f44336, #d32f2f); padding: 10px 20px; font-size: 1rem;" onclick="selectTeamAndRole('red', 'spy')">سباي أحمر</button>
-                    <button class="start-btn" style="background: linear-gradient(45deg, #2196f3, #1976d2); padding: 10px 20px; font-size: 1rem;" onclick="selectTeamAndRole('blue', 'spy')">سباي أزرق</button>
-                </div>
-                
-                <button class="start-btn" style="background: #6c757d; margin-top: 10px;" onclick="selectTeamAndRole(null, 'player')">دخول بدون فريق</button>
-            </div>
-        </div>
-
         <!-- شاشة اللعبة -->
         <div class="game-screen" id="gameScreen">
             <!-- شريط الأدوات -->
@@ -882,6 +876,10 @@
                     <div class="number-btn" onclick="selectNumber(8)">8</div>
                     <button class="send-hint-btn" onclick="sendHint()">إرسال التلميح</button>
                 </div>
+            </div>
+
+            <!-- زر إنهاء الدور -->
+            <div class="end-turn-area" id="endTurnArea" style="display: none;">
                 <button class="end-turn-btn" onclick="endTurn()">إنهاء الدور</button>
             </div>
 
@@ -959,6 +957,7 @@
         let isFirebaseReady = false;
         let connectionAttempts = 0;
         const maxConnectionAttempts = 3;
+        let showingColors = false;
 
         // إظهار حالة الاتصال للمستخدم
         function showConnectionStatus(message, isError = false) {
@@ -981,12 +980,10 @@
             showConnectionStatus('جاري الاتصال...');
             
             try {
-                // التحقق من وجود Firebase
                 if (typeof firebase === 'undefined') {
                     throw new Error('Firebase SDK غير محمل');
                 }
 
-                // تهيئة Firebase
                 if (!firebase.apps.length) {
                     console.log('📱 تهيئة تطبيق Firebase...');
                     firebase.initializeApp(firebaseConfig);
@@ -994,14 +991,11 @@
                     console.log('📱 Firebase مهيأ مسبقاً');
                 }
 
-                // الحصول على مرجع قاعدة البيانات
                 database = firebase.database();
                 console.log('💾 تم الحصول على مرجع قاعدة البيانات');
 
-                // اختبار الاتصال الأساسي
                 console.log('🔍 اختبار الاتصال...');
                 
-                // اختبار بسيط للكتابة والقراءة
                 const testRef = database.ref('test');
                 const testData = { timestamp: Date.now(), test: true };
                 
@@ -1012,14 +1006,12 @@
                 }).then((snapshot) => {
                     console.log('✅ اختبار القراءة نجح:', snapshot.val());
                     
-                    // حذف البيانات التجريبية
                     testRef.remove();
                     
                     isFirebaseReady = true;
                     showConnectionStatus('متصل بنجاح!');
                     console.log('🎉 Firebase جاهز للاستخدام!');
                     
-                    // إعداد مراقبة الاتصال
                     setupConnectionMonitoring();
                     
                 }).catch((error) => {
@@ -1071,7 +1063,6 @@
             showConnectionStatus(errorMessage, true);
             isFirebaseReady = false;
 
-            // محاولة إعادة الاتصال
             if (connectionAttempts < maxConnectionAttempts) {
                 connectionAttempts++;
                 console.log(`🔄 محاولة إعادة الاتصال ${connectionAttempts}/${maxConnectionAttempts}`);
@@ -1095,6 +1086,7 @@
         let roomId = null;
         let gameState = null;
         let selectedNumber = 1;
+        let cardsVisible = false;
 
         // كلمات اللعبة
         const gameWords = [
@@ -1118,15 +1110,12 @@
 
             const startBtn = document.querySelector('.start-btn');
             
-            // التحقق من جاهزية Firebase
             if (!isFirebaseReady || !database) {
                 console.log('⏳ Firebase غير جاهز، محاولة إعادة الاتصال...');
                 showConnectionStatus('جاري إعادة الاتصال...');
                 
-                // محاولة إعادة تهيئة Firebase
                 initializeFirebase();
                 
-                // انتظار الاتصال
                 let attempts = 0;
                 const maxAttempts = 15;
                 const checkConnection = setInterval(() => {
@@ -1142,7 +1131,6 @@
                         console.error('❌ انتهت مهلة الانتظار');
                         showConnectionStatus('فشل الاتصال', true);
                         
-                        // عرض تفاصيل المشكلة للمستخدم
                         const errorDetails = `
                         حدثت مشكلة في الاتصال:
                         
@@ -1171,7 +1159,6 @@
 
         // متابعة بدء اللعبة بعد التأكد من الاتصال
         function proceedWithGame(name) {
-            // حفظ الاسم في التخزين المحلي
             localStorage.setItem('playerName', name);
             
             currentPlayer = {
@@ -1182,22 +1169,18 @@
                 role: 'player'
             };
 
-            // إنشاء أو الانضمام لغرفة
             const roomFromUrl = getRoomIdFromUrl();
             
             if (roomFromUrl) {
-                // الانضمام لغرفة موجودة - الدخول مباشرة بدون اختيار فريق
                 roomId = roomFromUrl;
                 console.log('Joining existing room from URL:', roomId);
                 joinExistingRoomDirectly();
             } else {
-                // إنشاء غرفة جديدة - الذهاب مباشرة للعبة
                 roomId = generateRoomId();
                 console.log('Creating new room:', roomId);
                 joinRoom();
             }
             
-            // حفظ حالة اللاعب
             savePlayerState();
             
             console.log('Starting game with room ID:', roomId);
@@ -1232,10 +1215,8 @@
                 return;
             }
             
-            // إضافة timeout للعملية
             const roomRef = database.ref(`rooms/${roomId}`);
             
-            // تعيين timeout
             const timeoutId = setTimeout(() => {
                 console.error('Room join timeout');
                 alert('انتهت مهلة الاتصال. يرجى المحاولة مرة أخرى.');
@@ -1247,11 +1228,9 @@
                 console.log('Room data:', snapshot.val());
                 
                 if (!snapshot.exists()) {
-                    // إنشاء غرفة جديدة
                     console.log('Creating new room');
                     createNewRoom();
                 } else {
-                    // الانضمام لغرفة موجودة
                     console.log('Joining existing room');
                     joinExistingRoom();
                 }
@@ -1264,7 +1243,6 @@
                     details: error.details
                 });
                 
-                // محاولة تشخيص المشكلة
                 if (error.code === 'PERMISSION_DENIED') {
                     alert('ليس لديك صلاحية للوصول إلى قاعدة البيانات. يرجى التحقق من إعدادات Firebase.');
                 } else if (error.code === 'NETWORK_ERROR') {
@@ -1283,7 +1261,6 @@
                 const cards = generateCards();
                 console.log('Cards generated successfully:', cards.length);
                 
-                // التحقق من صحة البطاقات
                 const validCards = cards.every(card => 
                     card && 
                     typeof card.id === 'number' && 
@@ -1328,7 +1305,6 @@
                     setupGameListeners();
                     showGameScreen();
                     updateUrl();
-                    // حفظ الحالة بعد إنشاء الروم بنجاح
                     savePlayerState();
                 }).catch((error) => {
                     console.error('Error creating room:', error);
@@ -1345,32 +1321,24 @@
         function joinExistingRoomDirectly() {
             console.log('Joining existing room directly from invite link');
             
-            // التحقق من وجود الغرفة أولاً
             database.ref(`rooms/${roomId}`).once('value', (snapshot) => {
                 if (!snapshot.exists()) {
                     alert('الغرفة غير موجودة أو انتهت صلاحيتها');
-                    // العودة لشاشة البداية
                     window.history.replaceState({}, '', window.location.pathname);
                     location.reload();
                     return;
                 }
                 
-                // إضافة اللاعب للغرفة
                 database.ref(`rooms/${roomId}/players/${currentPlayer.id}`).set(currentPlayer).then(() => {
                     console.log('Player added to existing room directly');
                     
-                    // إعداد المستمعين أولاً
                     setupGameListeners();
                     showGameScreen();
                     updateUrl();
-                    // حفظ الحالة بعد الانضمام بنجاح
                     savePlayerState();
                     
-                    // إضافة رسالة للسجل بعد تحميل gameState
                     setTimeout(() => {
-                        if (gameState) {
-                            addToLog(`${currentPlayer.name} انضم للروم`);
-                        }
+                        // تم إزالة رسالة الانضمام للروم
                     }, 1000);
                     
                 }).catch((error) => {
@@ -1389,27 +1357,13 @@
             database.ref(`rooms/${roomId}/players/${currentPlayer.id}`).set(currentPlayer).then(() => {
                 console.log('Player added to existing room');
                 
-                // إعداد المستمعين أولاً
                 setupGameListeners();
                 showGameScreen();
                 updateUrl();
-                // حفظ الحالة بعد الانضمام بنجاح
                 savePlayerState();
                 
-                // إضافة رسالة للسجل بعد تحميل gameState
                 setTimeout(() => {
-                    if (gameState) {
-                        const teamText = currentPlayer.team ? 
-                            (currentPlayer.team === 'red' ? 'الأحمر' : 'الأزرق') : 
-                            'بدون فريق';
-                        const roleText = currentPlayer.role === 'spy' ? 'سباي' : 'لاعب';
-                        
-                        if (currentPlayer.team) {
-                            addToLog(`${currentPlayer.name} انضم للفريق ${teamText} كـ ${roleText}`);
-                        } else {
-                            addToLog(`${currentPlayer.name} انضم للروم`);
-                        }
-                    }
+                    // تم إزالة رسائل الانضمام للفرق
                 }, 1000);
                 
             }).catch((error) => {
@@ -1422,14 +1376,12 @@
         function generateCards() {
             const cards = [];
             
-            // التأكد من وجود كلمات كافية
             const availableWords = [...gameWords];
             while (availableWords.length < 25) {
                 availableWords.push(`كلمة${availableWords.length + 1}`);
             }
             const shuffledWords = availableWords.slice(0, 25).sort(() => Math.random() - 0.5);
             
-            // تحديد ألوان البطاقات (8 أحمر، 7 أزرق، 1 أسود، 9 محايد)
             const colors = [
                 'red', 'red', 'red', 'red', 'red', 'red', 'red', 'red',
                 'blue', 'blue', 'blue', 'blue', 'blue', 'blue', 'blue',
@@ -1437,7 +1389,6 @@
                 'neutral', 'neutral', 'neutral', 'neutral', 'neutral', 'neutral', 'neutral', 'neutral', 'neutral'
             ];
             
-            // التأكد من أن لدينا 25 لون بالضبط
             while (colors.length < 25) {
                 colors.push('neutral');
             }
@@ -1469,95 +1420,30 @@
                 }
             });
 
-            // تحديث حالة الاتصال
             database.ref(`rooms/${roomId}/players/${currentPlayer.id}/online`).set(true);
             database.ref(`rooms/${roomId}/players/${currentPlayer.id}/online`).onDisconnect().set(false);
-        }
-
-        // عرض شاشة اختيار الفريق
-        function showTeamSelectionScreen() {
-            document.getElementById('startScreen').style.display = 'none';
-            document.getElementById('teamSelectionScreen').style.display = 'flex';
-            
-            // إعداد مستمع للحصول على معلومات الغرفة
-            database.ref(`rooms/${roomId}`).once('value', (snapshot) => {
-                if (snapshot.exists()) {
-                    const roomData = snapshot.val();
-                    updateTeamSelectionInfo(roomData);
-                } else {
-                    // الغرفة غير موجودة
-                    alert('الغرفة غير موجودة أو انتهت صلاحيتها');
-                    document.getElementById('teamSelectionScreen').style.display = 'none';
-                    document.getElementById('startScreen').style.display = 'flex';
-                }
-            });
-        }
-
-        // تحديث معلومات اختيار الفريق
-        function updateTeamSelectionInfo(roomData) {
-            const players = Object.values(roomData.players || {});
-            const redPlayers = players.filter(p => p.team === 'red');
-            const bluePlayers = players.filter(p => p.team === 'blue');
-            const noTeamPlayers = players.filter(p => !p.team);
-            
-            // تحديث معلومات الغرفة
-            const roomInfo = document.getElementById('roomPlayersInfo');
-            roomInfo.innerHTML = `
-                <div style="font-weight: bold; margin-bottom: 15px; color: #333;">
-                    🏠 الغرفة: ${roomId} | 👥 اللاعبين: ${players.length}
-                </div>
-                <div style="display: flex; gap: 20px; justify-content: center; flex-wrap: wrap;">
-                    <div style="text-align: center;">
-                        <div style="color: #d32f2f; font-weight: bold;">🔴 الفريق الأحمر</div>
-                        <div style="font-size: 0.9rem; color: #666;">
-                            ${redPlayers.filter(p => p.role === 'player').length} لاعبين | 
-                            ${redPlayers.filter(p => p.role === 'spy').length} سباي
-                        </div>
-                        ${redPlayers.length > 0 ? '<div style="font-size: 0.8rem; margin-top: 5px;">' + redPlayers.map(p => p.name).join(', ') + '</div>' : ''}
-                    </div>
-                    <div style="text-align: center;">
-                        <div style="color: #1976d2; font-weight: bold;">🔵 الفريق الأزرق</div>
-                        <div style="font-size: 0.9rem; color: #666;">
-                            ${bluePlayers.filter(p => p.role === 'player').length} لاعبين | 
-                            ${bluePlayers.filter(p => p.role === 'spy').length} سباي
-                        </div>
-                        ${bluePlayers.length > 0 ? '<div style="font-size: 0.8rem; margin-top: 5px;">' + bluePlayers.map(p => p.name).join(', ') + '</div>' : ''}
-                    </div>
-                </div>
-                ${noTeamPlayers.length > 0 ? `
-                    <div style="margin-top: 15px; text-align: center;">
-                        <div style="color: #666; font-weight: bold;">⚪ بدون فريق</div>
-                        <div style="font-size: 0.8rem; margin-top: 5px;">${noTeamPlayers.map(p => p.name).join(', ')}</div>
-                    </div>
-                ` : ''}
-            `;
-            
-            // تحديث عدادات الفرق
-            document.getElementById('redTeamCount').textContent = `${redPlayers.length} لاعبين`;
-            document.getElementById('blueTeamCount').textContent = `${bluePlayers.length} لاعبين`;
-        }
-
-        // اختيار الفريق والدور
-        function selectTeamAndRole(team, role) {
-            currentPlayer.team = team;
-            currentPlayer.role = role;
-            
-            // الانضمام للغرفة مع الفريق المحدد
-            joinExistingRoom();
         }
 
         // عرض شاشة اللعبة
         function showGameScreen() {
             document.getElementById('startScreen').style.display = 'none';
-            document.getElementById('teamSelectionScreen').style.display = 'none';
             document.getElementById('gameScreen').style.display = 'flex';
             document.getElementById('currentPlayerName').textContent = currentPlayer.name;
         }
 
         // تحديث الرابط
         function updateUrl() {
-            const newUrl = `${window.location.origin}${window.location.pathname}?room=${roomId}`;
-            window.history.replaceState({}, '', newUrl);
+            try {
+                // التحقق من أن الصفحة ليست ملف محلي
+                if (window.location.protocol !== 'file:') {
+                    const newUrl = `${window.location.origin}${window.location.pathname}?room=${roomId}`;
+                    window.history.replaceState({}, '', newUrl);
+                } else {
+                    console.log('Running locally, skipping URL update for security');
+                }
+            } catch (error) {
+                console.log('Cannot update URL (security restriction):', error.message);
+            }
         }
 
         // تحديث عرض اللعبة
@@ -1570,6 +1456,12 @@
             updateLog();
             updateHintArea();
             updateLeaveTeamButton();
+        }
+
+        // تبديل إظهار ألوان البطاقات
+        function toggleCardColors() {
+            showingColors = !showingColors;
+            updateCardsDisplay();
         }
 
         // تحديث زر ترك الفريق
@@ -1611,7 +1503,6 @@
                 
                 playerDiv.textContent = player.name;
                 
-                // إضافة إمكانية النقر للمنشئ
                 if (gameState.creator === currentPlayer.id && player.id !== currentPlayer.id) {
                     playerDiv.style.cursor = 'pointer';
                     playerDiv.onclick = () => showKickDialog(player);
@@ -1619,7 +1510,6 @@
                 container.appendChild(playerDiv);
             });
 
-            // إضافة زر الانضمام فقط إذا لم يكن اللاعب في أي فريق وكان التغيير مسموح
             const isSpyRole = elementId.includes('Spies');
             const canJoin = !currentPlayer.team && 
                            (gameState.allowTeamChange !== false) && 
@@ -1671,13 +1561,6 @@
             const team = elementId.includes('red') ? 'red' : 'blue';
             const role = elementId.includes('Spies') ? 'spy' : 'player';
 
-            // إذا كان اللاعب في فريق آخر، اتركه أولاً
-            if (currentPlayer.team && currentPlayer.team !== team) {
-                addToLog(`${currentPlayer.name} انتقل من الفريق ${currentPlayer.team === 'red' ? 'الأحمر' : 'الأزرق'} إلى الفريق ${team === 'red' ? 'الأحمر' : 'الأزرق'}`);
-            } else if (!currentPlayer.team) {
-                addToLog(`${currentPlayer.name} انضم للفريق ${team === 'red' ? 'الأحمر' : 'الأزرق'} كـ ${role === 'spy' ? 'سباي' : 'لاعب'}`);
-            }
-
             currentPlayer.team = team;
             currentPlayer.role = role;
 
@@ -1685,7 +1568,6 @@
                 team: team,
                 role: role
             }).then(() => {
-                // حفظ الحالة المحدثة
                 savePlayerState();
             });
         }
@@ -1693,35 +1575,63 @@
         // تحديث عرض البطاقات
         function updateCardsDisplay() {
             const grid = document.getElementById('cardsGrid');
+            
+            // التحقق من وجود البيانات المطلوبة
+            if (!gameState || !gameState.cards || !Array.isArray(gameState.cards)) {
+                console.log('Cards data not available yet');
+                grid.style.display = 'none';
+                return;
+            }
+            
+            // إظهار الكلمات للجميع دائماً بعد بدء اللعبة
+            if (gameState.phase !== 'waiting') {
+                cardsVisible = true;
+            }
+            
+            // إخفاء الشبكة فقط في مرحلة الانتظار للجميع ما عدا السباي
+            if (gameState.phase === 'waiting' && currentPlayer && currentPlayer.role !== 'spy') {
+                grid.style.display = 'none';
+                return;
+            }
+            
+            grid.style.display = 'grid';
             grid.innerHTML = '';
 
             gameState.cards.forEach(card => {
+                // التحقق من صحة بيانات البطاقة
+                if (!card || typeof card.id === 'undefined' || !card.word) {
+                    console.warn('Invalid card data:', card);
+                    return;
+                }
                 const cardDiv = document.createElement('div');
                 cardDiv.className = 'card';
                 cardDiv.id = `card-${card.id}`;
 
-                // تحديد لون البطاقة
                 if (card.revealed) {
                     cardDiv.classList.add('revealed', card.color);
                 } else if (currentPlayer.role === 'spy') {
                     cardDiv.style.background = getCardColor(card.color);
+                    cardDiv.classList.add('spy-view', card.color);
                 }
 
-                // إضافة إمكانية التصويت
-                if (gameState.phase === 'guessing' && currentPlayer.team === gameState.currentTeam && currentPlayer.role === 'player') {
+                // إظهار أزرار اليد فقط للاعبين (وليس السباي) في مرحلة التخمين
+                if (gameState.phase === 'guessing' && currentPlayer.team === gameState.currentTeam && currentPlayer.role === 'player' && !card.revealed) {
                     cardDiv.classList.add('can-select');
                 }
 
-                // محتوى البطاقة
                 let cardContent = `<div>${card.word}</div>`;
                 
-                // عرض الأصوات
-                if (Object.keys(card.votes).length > 0) {
+                // إضافة علامة للبطاقات المكشوفة
+                if (card.revealed) {
+                    cardContent += '<div style="position: absolute; top: 5px; left: 5px; font-size: 1.2rem;">✓</div>';
+                }
+                
+                if (card.votes && Object.keys(card.votes).length > 0) {
                     cardContent += '<div class="voters">';
                     Object.values(card.votes).forEach(vote => {
-                        const voter = gameState.players[vote.playerId];
-                        if (voter) {
-                            cardContent += `<span class="voter ${voter.team}">${voter.name}</span>`;
+                        if (vote && vote.playerId && gameState.players && gameState.players[vote.playerId]) {
+                            const voter = gameState.players[vote.playerId];
+                            cardContent += `<span class="voter ${voter.team || ''}">${voter.name}</span>`;
                         }
                     });
                     cardContent += '</div>';
@@ -1729,7 +1639,6 @@
 
                 cardDiv.innerHTML = cardContent;
 
-                // إضافة زر اليد
                 if (cardDiv.classList.contains('can-select')) {
                     const handBtn = document.createElement('button');
                     handBtn.className = 'hand-btn';
@@ -1741,8 +1650,12 @@
                     cardDiv.appendChild(handBtn);
                 }
 
-                // إضافة حدث النقر للتصويت
-                cardDiv.onclick = () => voteForCard(card.id);
+                // منع النقر على البطاقات المكشوفة
+                if (!card.revealed) {
+                    cardDiv.onclick = () => voteForCard(card.id);
+                } else {
+                    cardDiv.style.cursor = 'default';
+                }
 
                 grid.appendChild(cardDiv);
             });
@@ -1754,13 +1667,14 @@
                 case 'red': return '#dc3545';
                 case 'blue': return '#007bff';
                 case 'black': return '#343a40';
-                case 'neutral': return '#6c757d';
+                case 'neutral': return '#f5deb3';
                 default: return '#f5f5dc';
             }
         }
 
         // التصويت على البطاقة
         function voteForCard(cardId) {
+            // السماح للتصويت فقط للاعبين (وليس السباي) في مرحلة التخمين
             if (gameState.phase !== 'guessing' || currentPlayer.team !== gameState.currentTeam || currentPlayer.role !== 'player') {
                 return;
             }
@@ -1770,11 +1684,9 @@
 
             const voteRef = database.ref(`rooms/${roomId}/cards/${cardId}/votes/${currentPlayer.id}`);
             
-            if (card.votes[currentPlayer.id]) {
-                // إلغاء التصويت
+            if (card.votes && card.votes[currentPlayer.id]) {
                 voteRef.remove();
             } else {
-                // إضافة التصويت
                 voteRef.set({
                     playerId: currentPlayer.id,
                     timestamp: Date.now()
@@ -1784,6 +1696,7 @@
 
         // تحديد البطاقة نهائياً
         function selectCard(cardId) {
+            // السماح فقط للاعبين (وليس السباي) بتحديد البطاقة
             if (gameState.phase !== 'guessing' || currentPlayer.team !== gameState.currentTeam || currentPlayer.role !== 'player') {
                 return;
             }
@@ -1791,16 +1704,13 @@
             const card = gameState.cards[cardId];
             if (card.revealed) return;
 
-            // كشف البطاقة
             database.ref(`rooms/${roomId}/cards/${cardId}`).update({
                 revealed: true,
                 votes: {}
             });
 
-            // إضافة للسجل
-            addToLog(`${currentPlayer.name} اختار كلمة "${card.word}"`);
+            addToLog(`${currentPlayer.name} اختار كلمة "${card.word}"`, gameState.currentTeam);
 
-            // معالجة النتيجة
             processCardSelection(card);
         }
 
@@ -1811,22 +1721,20 @@
 
             switch (card.color) {
                 case 'black':
-                    // الفريق الحالي يخسر
                     const winner = gameState.currentTeam === 'red' ? 'blue' : 'red';
                     database.ref(`rooms/${roomId}/winner`).set(winner);
-                    addToLog(`الفريق ${gameState.currentTeam === 'red' ? 'الأحمر' : 'الأزرق'} اختار البطاقة السوداء! فاز الفريق ${winner === 'red' ? 'الأحمر' : 'الأزرق'}!`);
+                    addToLog(`الفريق ${gameState.currentTeam === 'red' ? 'الأحمر' : 'الأزرق'} اختار البطاقة السوداء! فاز الفريق ${winner === 'red' ? 'الأحمر' : 'الأزرق'}!`, winner);
                     gameEnded = true;
                     break;
 
                 case gameState.currentTeam:
-                    // بطاقة صحيحة
                     const scoreKey = `${gameState.currentTeam}Score`;
                     const newScore = gameState[scoreKey] - 1;
                     database.ref(`rooms/${roomId}/${scoreKey}`).set(newScore);
                     
                     if (newScore === 0) {
                         database.ref(`rooms/${roomId}/winner`).set(gameState.currentTeam);
-                        addToLog(`فاز الفريق ${gameState.currentTeam === 'red' ? 'الأحمر' : 'الأزرق'}!`);
+                        addToLog(`فاز الفريق ${gameState.currentTeam === 'red' ? 'الأحمر' : 'الأزرق'}!`, gameState.currentTeam);
                         gameEnded = true;
                     } else {
                         const remaining = gameState.remainingGuesses - 1;
@@ -1838,12 +1746,10 @@
                     break;
 
                 case 'neutral':
-                    // بطاقة محايدة - ينتهي الدور
                     endTurn = true;
                     break;
 
                 default:
-                    // بطاقة الفريق الآخر
                     const otherTeam = gameState.currentTeam === 'red' ? 'blue' : 'red';
                     const otherScoreKey = `${otherTeam}Score`;
                     const otherNewScore = gameState[otherScoreKey] - 1;
@@ -1851,7 +1757,7 @@
                     
                     if (otherNewScore === 0) {
                         database.ref(`rooms/${roomId}/winner`).set(otherTeam);
-                        addToLog(`فاز الفريق ${otherTeam === 'red' ? 'الأحمر' : 'الأزرق'}!`);
+                        addToLog(`فاز الفريق ${otherTeam === 'red' ? 'الأحمر' : 'الأزرق'}!`, otherTeam);
                         gameEnded = true;
                     } else {
                         endTurn = true;
@@ -1867,12 +1773,16 @@
         // تبديل الدور
         function switchTurn() {
             const nextTeam = gameState.currentTeam === 'red' ? 'blue' : 'red';
+            const nextTeamName = nextTeam === 'red' ? 'الأحمر' : 'الأزرق';
+            
             database.ref(`rooms/${roomId}`).update({
                 currentTeam: nextTeam,
                 phase: 'hint',
                 hint: null,
                 remainingGuesses: 0
             });
+            
+            addToLog(`🔄 دور الفريق ${nextTeamName} - السباي يكتب التلميح`, nextTeam);
         }
 
         // تحديث حالة اللعبة
@@ -1880,12 +1790,17 @@
             const statusDiv = document.getElementById('gameStatus');
             const startBtn = document.getElementById('startGameBtn');
             
+            // عرض النقاط دائماً عند بدء اللعبة
+            let scoreText = '';
+            if (gameState.phase !== 'waiting') {
+                scoreText = ` | 🔴 ${gameState.redScore} - 🔵 ${gameState.blueScore}`;
+            }
+            
             if (gameState.winner) {
-                statusDiv.textContent = `فاز الفريق ${gameState.winner === 'red' ? 'الأحمر' : 'الأزرق'}!`;
+                statusDiv.textContent = `🏆 فاز الفريق ${gameState.winner === 'red' ? 'الأحمر' : 'الأزرق'}!${scoreText}`;
                 statusDiv.style.background = gameState.winner === 'red' ? '#ffebee' : '#e3f2fd';
                 startBtn.style.display = 'none';
             } else if (gameState.phase === 'waiting') {
-                // التحقق من وجود لاعبين في كلا الفريقين
                 const players = Object.values(gameState.players);
                 const redTeam = players.filter(p => p.team === 'red');
                 const blueTeam = players.filter(p => p.team === 'blue');
@@ -1894,7 +1809,6 @@
                 const hasBlueSpy = blueTeam.some(p => p.role === 'spy');
                 const hasBluePlayer = blueTeam.some(p => p.role === 'player');
                 
-                // المنشئ يمكنه بدء اللعبة في أي وقت
                 if (gameState.creator === currentPlayer.id) {
                     startBtn.style.display = 'inline-block';
                     
@@ -1923,39 +1837,25 @@
                         statusDiv.style.border = '2px solid #2196f3';
                     }
                 } else {
-                    // للاعبين العاديين
-                    if (redTeam.length >= 2 && blueTeam.length >= 2 && hasRedSpy && hasRedPlayers && hasBlueSpy && hasBluePlayer) {
-                        statusDiv.textContent = 'الفرق جاهزة! في انتظار المنشئ لبدء اللعبة';
-                        statusDiv.style.background = '#d4edda';
-                        statusDiv.style.color = '#155724';
-                        statusDiv.style.border = '2px solid #28a745';
-                    } else {
-                        let missingText = 'في انتظار: ';
-                        const missing = [];
-                        
-                        if (!hasRedSpy) missing.push('سباي أحمر');
-                        if (!hasRedPlayers) missing.push('لاعب أحمر');
-                        if (!hasBlueSpy) missing.push('سباي أزرق');
-                        if (!hasBluePlayer) missing.push('لاعب أزرق');
-                        
-                        statusDiv.textContent = missingText + missing.join(' - ');
-                        statusDiv.style.background = '#fff3cd';
-                        statusDiv.style.color = '#856404';
-                        statusDiv.style.border = '2px solid #ffc107';
-                    }
+                    statusDiv.textContent = 'اختر فريقك من الأسفل للانضمام';
+                    statusDiv.style.background = '#fff3cd';
+                    statusDiv.style.color = '#856404';
+                    statusDiv.style.border = '2px solid #ffc107';
                     startBtn.style.display = 'none';
                 }
             } else if (gameState.phase === 'hint') {
-                statusDiv.textContent = `دور الفريق ${gameState.currentTeam === 'red' ? 'الأحمر' : 'الأزرق'} - السباي يكتب التلميح`;
-                statusDiv.style.background = '';
-                statusDiv.style.color = '';
-                statusDiv.style.border = '';
+                const teamName = gameState.currentTeam === 'red' ? 'الأحمر' : 'الأزرق';
+                statusDiv.textContent = `🎯 دور الفريق ${teamName} - السباي يكتب التلميح${scoreText}`;
+                statusDiv.style.background = gameState.currentTeam === 'red' ? '#ffebee' : '#e3f2fd';
+                statusDiv.style.color = gameState.currentTeam === 'red' ? '#c62828' : '#1565c0';
+                statusDiv.style.border = `2px solid ${gameState.currentTeam === 'red' ? '#f44336' : '#2196f3'}`;
                 startBtn.style.display = 'none';
             } else if (gameState.phase === 'guessing') {
-                statusDiv.textContent = `دور الفريق ${gameState.currentTeam === 'red' ? 'الأحمر' : 'الأزرق'} - ${gameState.remainingGuesses} تخمينات متبقية`;
-                statusDiv.style.background = '';
-                statusDiv.style.color = '';
-                statusDiv.style.border = '';
+                const teamName = gameState.currentTeam === 'red' ? 'الأحمر' : 'الأزرق';
+                statusDiv.textContent = `🤔 دور الفريق ${teamName} - ${gameState.remainingGuesses} تخمينات متبقية${scoreText}`;
+                statusDiv.style.background = gameState.currentTeam === 'red' ? '#ffebee' : '#e3f2fd';
+                statusDiv.style.color = gameState.currentTeam === 'red' ? '#c62828' : '#1565c0';
+                statusDiv.style.border = `2px solid ${gameState.currentTeam === 'red' ? '#f44336' : '#2196f3'}`;
                 startBtn.style.display = 'none';
             }
         }
@@ -1965,14 +1865,30 @@
             const hintArea = document.getElementById('hintArea');
             const currentHint = document.getElementById('currentHint');
             
+            // إظهار منطقة التلميح فقط للسباي في دوره
             if (gameState.phase === 'hint' && currentPlayer.team === gameState.currentTeam && currentPlayer.role === 'spy') {
                 hintArea.classList.add('active');
             } else {
                 hintArea.classList.remove('active');
             }
 
+            // إظهار زر إنهاء الدور فقط للاعبين (وليس السباي) في مرحلة التخمين
+            const endTurnArea = document.getElementById('endTurnArea');
+            if (gameState.phase === 'guessing' && currentPlayer.team === gameState.currentTeam && currentPlayer.role === 'player') {
+                endTurnArea.style.display = 'block';
+            } else {
+                endTurnArea.style.display = 'none';
+            }
+
             if (gameState.hint) {
-                currentHint.textContent = `التلميح: ${gameState.hint.text} (${gameState.hint.number})`;
+                const teamName = gameState.currentTeam === 'red' ? 'الأحمر' : 'الأزرق';
+                currentHint.innerHTML = `
+                    <strong>💡 التلميح من الفريق ${teamName}:</strong><br>
+                    "${gameState.hint.text}" - ${gameState.hint.number} كلمات<br>
+                    <small>بواسطة: ${gameState.hint.spy} | متبقي: ${gameState.remainingGuesses} تخمينات</small>
+                `;
+                currentHint.style.background = gameState.currentTeam === 'red' ? '#ffebee' : '#e3f2fd';
+                currentHint.style.border = `2px solid ${gameState.currentTeam === 'red' ? '#f44336' : '#2196f3'}`;
                 currentHint.classList.remove('hidden');
             } else {
                 currentHint.classList.add('hidden');
@@ -2007,18 +1923,21 @@
                 remainingGuesses: selectedNumber + 1
             });
 
-            addToLog(`${currentPlayer.name} أعطى تلميح: "${hintText}" (${selectedNumber})`);
+            addToLog(`${currentPlayer.name} أعطى تلميح: "${hintText}" (${selectedNumber})`, gameState.currentTeam);
             
             document.getElementById('hintInput').value = '';
         }
 
         // إنهاء الدور
         function endTurn() {
-            if (currentPlayer.team === gameState.currentTeam) {
+            if (currentPlayer.team === gameState.currentTeam && currentPlayer.role === 'player') {
+                const currentTeamName = gameState.currentTeam === 'red' ? 'الأحمر' : 'الأزرق';
+                addToLog(`الفريق ${currentTeamName} أنهى دوره`, gameState.currentTeam);
                 switchTurn();
-                addToLog(`الفريق ${gameState.currentTeam === 'red' ? 'الأحمر' : 'الأزرق'} أنهى دوره`);
             }
         }
+
+
 
         // بدء اللعبة (للمنشئ فقط)
         function startGamePlay() {
@@ -2032,7 +1951,6 @@
                 return;
             }
 
-            // التحقق من وجود لاعبين أساسيين (اختياري)
             const players = Object.values(gameState.players);
             const redTeam = players.filter(p => p.team === 'red');
             const blueTeam = players.filter(p => p.team === 'blue');
@@ -2041,28 +1959,20 @@
             const hasBlueSpy = blueTeam.some(p => p.role === 'spy');
             const hasBluePlayer = blueTeam.some(p => p.role === 'player');
 
-            // تحذير إذا لم تكن الفرق مكتملة، لكن السماح بالبدء
-            if (!hasRedSpy || !hasRedPlayers || !hasBlueSpy || !hasBluePlayer) {
-                const missingRoles = [];
-                if (!hasRedSpy) missingRoles.push('سباي أحمر');
-                if (!hasRedPlayers) missingRoles.push('لاعب أحمر');
-                if (!hasBlueSpy) missingRoles.push('سباي أزرق');
-                if (!hasBluePlayer) missingRoles.push('لاعب أزرق');
-                
-                const confirmMessage = `تحذير: الفرق غير مكتملة!\nناقص: ${missingRoles.join(' - ')}\n\nهل تريد بدء اللعبة رغم ذلك؟`;
-                
-                if (!confirm(confirmMessage)) {
-                    return;
-                }
-            }
+            // بدء اللعبة مباشرة بدون تحذيرات
 
-            // بدء اللعبة - تغيير المرحلة إلى hint
             database.ref(`rooms/${roomId}`).update({
                 phase: 'hint',
-                currentTeam: 'red'
+                currentTeam: 'red',
+                hint: null,
+                remainingGuesses: 0
             }).then(() => {
-                addToLog(`🎮 ${currentPlayer.name} بدأ اللعبة! الكلمات ظهرت للسبايز`);
-                addToLog(`🔴 دور الفريق الأحمر - السباي يكتب التلميح`);
+                // إظهار الكلمات للجميع عند بدء اللعبة
+                cardsVisible = true;
+                updateCardsDisplay();
+                updateGameStatus();
+                addToLog(`🎮 ${currentPlayer.name} بدأ اللعبة! الكلمات ظهرت للجميع`, null);
+                addToLog(`🔴 دور الفريق الأحمر - السباي يكتب التلميح`, 'red');
             }).catch((error) => {
                 console.error('Error starting game:', error);
                 alert('حدث خطأ في بدء اللعبة');
@@ -2070,7 +1980,7 @@
         }
 
         // إضافة للسجل
-        function addToLog(message) {
+        function addToLog(message, teamOverride = null) {
             if (!database || !roomId) {
                 console.log('Cannot add to log: database or roomId not ready');
                 return;
@@ -2079,7 +1989,7 @@
             const logEntry = {
                 message: message,
                 timestamp: Date.now(),
-                team: (gameState && gameState.currentTeam) ? gameState.currentTeam : null
+                team: teamOverride || (gameState && gameState.currentTeam) ? gameState.currentTeam : null
             };
 
             database.ref(`rooms/${roomId}/log`).push(logEntry).catch((error) => {
@@ -2093,7 +2003,11 @@
             logDiv.innerHTML = '';
 
             if (gameState.log) {
-                Object.values(gameState.log).slice(-10).forEach(entry => {
+                // ترتيب الأحداث حسب الوقت
+                const sortedEntries = Object.values(gameState.log).sort((a, b) => a.timestamp - b.timestamp);
+                
+                // عرض آخر 10 أحداث
+                sortedEntries.slice(-10).forEach(entry => {
                     const entryDiv = document.createElement('div');
                     entryDiv.className = `log-entry ${entry.team || ''}`;
                     entryDiv.textContent = entry.message;
@@ -2116,23 +2030,27 @@
                 const newCards = generateCards();
                 console.log('✅ تم إنشاء بطاقات جديدة');
                 
-                // الاحتفاظ باللاعبين والإعدادات الحالية
                 const resetData = {
                     cards: newCards,
                     currentTeam: 'red',
-                    phase: 'waiting', // البدء بمرحلة الانتظار
+                    phase: 'waiting',
                     hint: null,
                     remainingGuesses: 0,
                     log: {},
                     redScore: 8,
                     blueScore: 7,
                     winner: null
-                    // لا نغير players أو creator أو allowTeamChange
                 };
 
                 database.ref(`rooms/${roomId}`).update(resetData).then(() => {
                     console.log('✅ تم إعادة تشغيل اللعبة بنجاح');
-                    addToLog(`🔄 ${currentPlayer.name} أعاد تشغيل اللعبة - بطاقات جديدة!`);
+                    addToLog(`🔄 ${currentPlayer.name} أعاد تشغيل اللعبة - بطاقات جديدة!`, null);
+                    
+                    // إخفاء الكلمات عند إعادة التشغيل
+                    showingColors = false;
+                    cardsVisible = false;
+                    updateCardsDisplay();
+                    updateGameStatus();
                 }).catch((error) => {
                     console.error('❌ خطأ في إعادة تشغيل اللعبة:', error);
                 });
@@ -2176,7 +2094,7 @@
             }
 
             database.ref(`rooms/${roomId}/players/${playerToKick.id}`).remove().then(() => {
-                addToLog(`${currentPlayer.name} طرد ${playerToKick.name} من الروم`);
+                // تم إزالة رسالة الطرد
                 cancelKick();
             }).catch((error) => {
                 console.error('Error kicking player:', error);
@@ -2203,11 +2121,6 @@
             }
         }
 
-        // تغيير اسم اللاعب أو فريقه (للتوافق مع الكود القديم)
-        function changePlayerName() {
-            togglePlayerDropdown();
-        }
-
         // ترك الفريق
         function leaveTeam() {
             if (!currentPlayer.team) {
@@ -2217,20 +2130,17 @@
             const oldTeam = currentPlayer.team;
             const oldRole = currentPlayer.role;
             
-            // تحديث البيانات محلياً أولاً
             currentPlayer.team = null;
             currentPlayer.role = 'player';
             
-            // تحديث قاعدة البيانات
             database.ref(`rooms/${roomId}/players/${currentPlayer.id}`).update({
                 team: null,
                 role: 'player'
             }).then(() => {
                 console.log('Successfully left team');
-                addToLog(`${currentPlayer.name} ترك الفريق ${oldTeam === 'red' ? 'الأحمر' : 'الأزرق'}`);
+                // تم إزالة رسالة ترك الفريق
             }).catch((error) => {
                 console.error('Error leaving team:', error);
-                // إعادة تعيين القيم في حالة الخطأ
                 currentPlayer.team = oldTeam;
                 currentPlayer.role = oldRole;
             });
@@ -2238,11 +2148,9 @@
 
         // الخروج من الروم
         function leaveRoom() {
-
             try {
-                // إزالة اللاعب من قاعدة البيانات
                 if (database && roomId && currentPlayer) {
-                    addToLog(`${currentPlayer.name} غادر الروم`);
+                    // تم إزالة رسالة مغادرة الروم
                     database.ref(`rooms/${roomId}/players/${currentPlayer.id}`).remove().then(() => {
                         console.log('Player removed from room');
                     }).catch((error) => {
@@ -2250,19 +2158,16 @@
                     });
                 }
 
-                // إزالة الحالة المحفوظة
                 localStorage.removeItem('gameState');
                 console.log('Saved game state cleared');
 
-                // إعادة تعيين المتغيرات
                 currentPlayer = null;
                 roomId = null;
                 gameState = null;
+                showingColors = false;
 
-                // إزالة معرف الروم من الرابط
                 window.history.replaceState({}, '', window.location.pathname);
 
-                // العودة لشاشة البداية
                 document.getElementById('gameScreen').style.display = 'none';
                 document.getElementById('startScreen').style.display = 'flex';
                 document.getElementById('playerName').value = '';
@@ -2289,7 +2194,6 @@
             let left = rect.left;
             let top = rect.bottom + 5;
             
-            // التحقق من الحدود الأفقية
             if (left + dropdownRect.width > viewportWidth - 10) {
                 left = viewportWidth - dropdownRect.width - 10;
             }
@@ -2297,12 +2201,9 @@
                 left = 10;
             }
             
-            // التحقق من الحدود العمودية
             if (top + dropdownRect.height > viewportHeight - 10) {
-                // عرض القائمة فوق الزر إذا لم تتسع تحته
                 top = rect.top - dropdownRect.height - 5;
                 if (top < 10) {
-                    // إذا لم تتسع فوق أو تحت، اعرضها في المنتصف
                     top = Math.max(10, (viewportHeight - dropdownRect.height) / 2);
                 }
             }
@@ -2317,7 +2218,6 @@
                 closeAllDropdowns();
             }
             
-            // إغلاق نافذة الطرد عند النقر خارجها
             if (event.target.classList.contains('kick-dialog')) {
                 cancelKick();
             }
@@ -2331,7 +2231,6 @@
             dropdown.classList.toggle('show');
             if (dropdown.classList.contains('show')) {
                 updatePlayersDropdown();
-                // انتظار قصير لضمان تحديث المحتوى قبل تحديد الموقع
                 setTimeout(() => {
                     positionDropdown(dropdown, trigger);
                 }, 10);
@@ -2350,19 +2249,16 @@
 
             let content = '';
 
-            // معلومات الروم
             content += `<div class="dropdown-info">`;
             content += `🏠 رقم الروم: <strong>${roomId}</strong><br>`;
             content += `👥 عدد اللاعبين: <strong>${players.length}</strong><br>`;
             content += `🎮 حالة اللعبة: <strong>${getGamePhaseText()}</strong>`;
             content += `</div>`;
 
-            // تجميع اللاعبين حسب الفريق
             const redTeam = players.filter(p => p.team === 'red');
             const blueTeam = players.filter(p => p.team === 'blue');
             const noTeam = players.filter(p => !p.team);
 
-            // الفريق الأحمر
             if (redTeam.length > 0) {
                 content += `<div class="dropdown-section">`;
                 content += `<div class="dropdown-section-title">🔴 الفريق الأحمر (${redTeam.length})</div>`;
@@ -2372,7 +2268,6 @@
                 content += `</div>`;
             }
 
-            // الفريق الأزرق
             if (blueTeam.length > 0) {
                 content += `<div class="dropdown-section">`;
                 content += `<div class="dropdown-section-title">🔵 الفريق الأزرق (${blueTeam.length})</div>`;
@@ -2382,7 +2277,6 @@
                 content += `</div>`;
             }
 
-            // بدون فريق
             if (noTeam.length > 0) {
                 content += `<div class="dropdown-section">`;
                 content += `<div class="dropdown-section-title">⚪ بدون فريق (${noTeam.length})</div>`;
@@ -2392,7 +2286,6 @@
                 content += `</div>`;
             }
 
-            // معلومات المنشئ
             if (isCreator) {
                 content += `<div class="dropdown-info">`;
                 content += `👑 <strong>صلاحياتك كمنشئ:</strong><br>`;
@@ -2511,14 +2404,12 @@
 
             let content = '';
 
-            // تغيير الاسم
             content += `<div class="dropdown-section">`;
             content += `<div class="dropdown-section-title">تغيير الاسم</div>`;
             content += `<input type="text" id="newPlayerName" value="${currentPlayer.name}" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px; margin-bottom: 10px; font-size: 0.9rem;" maxlength="20">`;
             content += `<button class="dropdown-button" onclick="changePlayerNameDirect(); closeAllDropdowns();">تغيير الاسم</button>`;
             content += `</div>`;
 
-            // تغيير الفريق - فقط زر ترك الفريق إذا كان في فريق
             if (gameState && gameState.allowTeamChange !== false && currentPlayer.team) {
                 content += `<div class="dropdown-section">`;
                 content += `<div class="dropdown-section-title">الفريق</div>`;
@@ -2526,7 +2417,6 @@
                 content += `</div>`;
             }
 
-            // إعدادات المنشئ
             if (isCreator) {
                 content += `<div class="dropdown-section">`;
                 content += `<div class="dropdown-section-title">إعدادات المنشئ</div>`;
@@ -2537,7 +2427,6 @@
                 content += `</div>`;
             }
 
-            // الخروج من الروم
             content += `<div class="dropdown-section">`;
             content += `<button class="dropdown-button danger" onclick="leaveRoom(); closeAllDropdowns();">الخروج من الروم</button>`;
             content += `</div>`;
@@ -2562,24 +2451,40 @@
         // تحديث محتوى قائمة الرابط
         function updateLinkDropdown() {
             const container = document.getElementById('linkDropdownContent');
-            const link = `https://mayadinq8.github.io/marabit/?room=${roomId}`;
-
-            let content = '';
             
-            content += `<div class="dropdown-info">`;
-            content += `شارك هذا الرابط مع الأصدقاء للانضمام للروم:`;
-            content += `</div>`;
+            let link, content = '';
             
-            content += `<div class="dropdown-link">${link}</div>`;
-            
-            content += `<button class="dropdown-button success" onclick="copyRoomLinkFromDropdown(); closeAllDropdowns();">نسخ الرابط</button>`;
+            // التحقق من نوع البروتوكول
+            if (window.location.protocol === 'file:') {
+                // للملفات المحلية
+                content += `<div class="dropdown-info">`;
+                content += `🏠 <strong>تشغيل محلي</strong><br><br>`;
+                content += `رقم الروم: <strong>${roomId}</strong><br><br>`;
+                content += `لمشاركة اللعبة مع الأصدقاء، يجب رفع الملف على خادم ويب أو استخدام الرابط المباشر للعبة.`;
+                content += `</div>`;
+                
+                content += `<div class="dropdown-link">رقم الروم: ${roomId}</div>`;
+                
+                content += `<button class="dropdown-button success" onclick="copyRoomId(); closeAllDropdowns();">نسخ رقم الروم</button>`;
+            } else {
+                // للخوادم العادية
+                link = `${window.location.origin}${window.location.pathname}?room=${roomId}`;
+                
+                content += `<div class="dropdown-info">`;
+                content += `شارك هذا الرابط مع الأصدقاء للانضمام للروم:`;
+                content += `</div>`;
+                
+                content += `<div class="dropdown-link">${link}</div>`;
+                
+                content += `<button class="dropdown-button success" onclick="copyRoomLinkFromDropdown(); closeAllDropdowns();">نسخ الرابط</button>`;
+            }
 
             container.innerHTML = content;
         }
 
         // نسخ الرابط من القائمة المنسدلة
         function copyRoomLinkFromDropdown() {
-            const link = `https://mayadinq8.github.io/marabit/?room=${roomId}`;
+            const link = `${window.location.origin}${window.location.pathname}?room=${roomId}`;
             
             if (navigator.clipboard && navigator.clipboard.writeText) {
                 navigator.clipboard.writeText(link).then(() => {
@@ -2592,30 +2497,17 @@
             }
         }
 
-        // تغيير الاسم من القائمة
-        function changePlayerNamePrompt() {
-            const newName = prompt('أدخل الاسم الجديد:', currentPlayer.name);
-            if (newName && newName.trim() && newName.trim() !== currentPlayer.name) {
-                if (newName.trim().length > 20) {
-                    alert('الاسم طويل جداً (الحد الأقصى 20 حرف)');
-                    return;
-                }
-                
-                const oldName = currentPlayer.name;
-                currentPlayer.name = newName.trim();
-                
-                localStorage.setItem('playerName', currentPlayer.name);
-                
-                database.ref(`rooms/${roomId}/players/${currentPlayer.id}/name`).set(currentPlayer.name).then(() => {
-                    document.getElementById('currentPlayerName').textContent = currentPlayer.name;
-                    addToLog(`${oldName} غير اسمه إلى ${currentPlayer.name}`);
-                    alert('تم تغيير الاسم بنجاح!');
-                }).catch((error) => {
-                    console.error('Error changing name:', error);
-                    alert('حدث خطأ في تغيير الاسم');
-                    currentPlayer.name = oldName;
-                    localStorage.setItem('playerName', oldName);
+        // نسخ رقم الروم فقط (للتشغيل المحلي)
+        function copyRoomId() {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(roomId).then(() => {
+                    console.log('Room ID copied successfully');
+                    alert('تم نسخ رقم الروم!');
+                }).catch(() => {
+                    fallbackCopyMethod(roomId);
                 });
+            } else {
+                fallbackCopyMethod(roomId);
             }
         }
 
@@ -2642,8 +2534,7 @@
             
             database.ref(`rooms/${roomId}/players/${currentPlayer.id}/name`).set(currentPlayer.name).then(() => {
                 document.getElementById('currentPlayerName').textContent = currentPlayer.name;
-                addToLog(`${oldName} غير اسمه إلى ${currentPlayer.name}`);
-                alert('تم تغيير الاسم بنجاح!');
+                // تم تغيير الاسم بنجاح
             }).catch((error) => {
                 console.error('Error changing name:', error);
                 alert('حدث خطأ في تغيير الاسم');
@@ -2658,58 +2549,39 @@
             const newSetting = !(gameState.allowTeamChange !== false);
             
             database.ref(`rooms/${roomId}/allowTeamChange`).set(newSetting).then(() => {
-                const resultMsg = newSetting ? 'تم السماح بتغيير الفرق' : 'تم منع تغيير الفرق';
-                alert(resultMsg);
-                addToLog(`منشئ الروم ${newSetting ? 'سمح بـ' : 'منع'} تغيير الفرق`);
+                // تم إزالة رسالة تغيير إعدادات الفرق
             }).catch((error) => {
-                console.error('Error changing team setting:', error);
-                alert('حدث خطأ في تغيير الإعداد');
+                console.error('Error changing team settings:', error);
             });
         }
 
-        // تبديل إعدادات الانتقال للسباي
+        // تبديل إعدادات تغيير السباي
         function toggleSpyChangeSettings() {
             const newSetting = !(gameState.allowSpyChange !== false);
             
             database.ref(`rooms/${roomId}/allowSpyChange`).set(newSetting).then(() => {
-                const resultMsg = newSetting ? 'تم السماح بالانتقال للسباي' : 'تم منع الانتقال للسباي';
-                alert(resultMsg);
-                addToLog(`منشئ الروم ${newSetting ? 'سمح بـ' : 'منع'} الانتقال للسباي`);
+                // تم إزالة رسالة تغيير إعدادات السباي
             }).catch((error) => {
-                console.error('Error changing spy setting:', error);
-                alert('حدث خطأ في تغيير الإعداد');
+                console.error('Error changing spy settings:', error);
             });
         }
-        
+
         // الحصول على نص مرحلة اللعبة
         function getGamePhaseText() {
             if (!gameState) return 'غير معروف';
             
-            if (gameState.winner) {
-                return `انتهت - فاز الفريق ${gameState.winner === 'red' ? 'الأحمر' : 'الأزرق'}`;
-            }
-            
             switch (gameState.phase) {
-                case 'waiting':
-                    return 'في انتظار اللاعبين';
-                case 'hint':
-                    return `دور ${gameState.currentTeam === 'red' ? 'الأحمر' : 'الأزرق'} - كتابة التلميح`;
-                case 'guessing':
-                    return `دور ${gameState.currentTeam === 'red' ? 'الأحمر' : 'الأزرق'} - التخمين`;
-                default:
-                    return 'غير معروف';
+                case 'waiting': return 'في الانتظار';
+                case 'hint': return 'كتابة التلميح';
+                case 'guessing': return 'التخمين';
+                default: return gameState.winner ? 'انتهت' : 'غير معروف';
             }
         }
 
-        // نسخ رابط الغرفة (للتوافق مع الكود القديم)
-        function copyRoomLink() {
-            toggleLinkDropdown();
-        }
-
-        // طريقة بديلة لنسخ الرابط
-        function fallbackCopyMethod(link) {
+        // طريقة بديلة لنسخ النص
+        function fallbackCopyMethod(text) {
             const textArea = document.createElement('textarea');
-            textArea.value = link;
+            textArea.value = text;
             textArea.style.position = 'fixed';
             textArea.style.left = '-999999px';
             textArea.style.top = '-999999px';
@@ -2719,312 +2591,154 @@
             
             try {
                 document.execCommand('copy');
-                alert('تم نسخ الرابط!');
-            } catch (error) {
-                console.error('Copy failed:', error);
-                prompt('انسخ هذا الرابط يدوياً:', link);
+                console.log('Text copied using fallback method');
+            } catch (err) {
+                console.error('Fallback copy failed:', err);
+                prompt('انسخ هذا الرابط:', text);
             } finally {
                 document.body.removeChild(textArea);
             }
         }
 
-        // حفظ حالة اللاعب في التخزين المحلي
+        // حفظ حالة اللاعب
         function savePlayerState() {
             if (currentPlayer && roomId) {
-                const playerState = {
+                const gameState = {
                     player: currentPlayer,
                     roomId: roomId,
                     timestamp: Date.now()
                 };
-                localStorage.setItem('gameState', JSON.stringify(playerState));
-                console.log('Player state saved:', playerState);
+                localStorage.setItem('gameState', JSON.stringify(gameState));
+                console.log('Game state saved:', gameState);
             }
         }
 
-        // استرجاع حالة اللاعب من التخزين المحلي
+        // استرجاع حالة اللاعب
         function loadPlayerState() {
             try {
                 const savedState = localStorage.getItem('gameState');
                 if (savedState) {
-                    const playerState = JSON.parse(savedState);
+                    const gameState = JSON.parse(savedState);
+                    console.log('Found saved game state:', gameState);
                     
-                    // التحقق من أن الحالة المحفوظة حديثة (أقل من 24 ساعة)
-                    const hoursPassed = (Date.now() - playerState.timestamp) / (1000 * 60 * 60);
-                    if (hoursPassed < 24 && playerState.player && playerState.roomId) {
-                        console.log('Loading saved player state:', playerState);
-                        return playerState;
+                    const hoursSinceLastSave = (Date.now() - gameState.timestamp) / (1000 * 60 * 60);
+                    if (hoursSinceLastSave < 24) {
+                        return gameState;
                     } else {
-                        console.log('Saved state is too old or invalid, clearing...');
+                        console.log('Saved state is too old, ignoring');
                         localStorage.removeItem('gameState');
                     }
                 }
             } catch (error) {
-                console.error('Error loading player state:', error);
+                console.error('Error loading saved state:', error);
                 localStorage.removeItem('gameState');
             }
             return null;
         }
 
-        // محاولة إعادة الاتصال بالروم
-        function reconnectToRoom(savedState) {
-            console.log('Attempting to reconnect to room:', savedState.roomId);
+        // التحقق من الحالة المحفوظة عند تحميل الصفحة
+        document.addEventListener('DOMContentLoaded', function() {
+            const savedName = localStorage.getItem('playerName');
+            if (savedName) {
+                document.getElementById('playerName').value = savedName;
+            }
+
+            const savedState = loadPlayerState();
+            if (savedState && savedState.roomId && savedState.player) {
+                console.log('Attempting to restore saved game state');
+                
+                const restoreMessage = `تم العثور على جلسة محفوظة:\nالروم: ${savedState.roomId}\nالاسم: ${savedState.player.name}\n\nهل تريد العودة إليها؟`;
+                
+                if (confirm(restoreMessage)) {
+                    currentPlayer = savedState.player;
+                    roomId = savedState.roomId;
+                    
+                    document.getElementById('playerName').value = currentPlayer.name;
+                    
+                    if (isFirebaseReady && database) {
+                        rejoinSavedRoom();
+                    } else {
+                        const checkFirebase = setInterval(() => {
+                            if (isFirebaseReady && database) {
+                                clearInterval(checkFirebase);
+                                rejoinSavedRoom();
+                            }
+                        }, 500);
+                    }
+                } else {
+                    localStorage.removeItem('gameState');
+                }
+            }
+        });
+
+        // إعادة الانضمام للروم المحفوظ
+        function rejoinSavedRoom() {
+            console.log('Attempting to rejoin saved room:', roomId);
             
-            currentPlayer = savedState.player;
-            roomId = savedState.roomId;
-            
-            // التحقق من وجود الروم أولاً
             database.ref(`rooms/${roomId}`).once('value', (snapshot) => {
                 if (snapshot.exists()) {
-                    const roomData = snapshot.val();
+                    console.log('Saved room exists, rejoining...');
                     
-                    // التحقق من وجود اللاعب في الروم
-                    if (roomData.players && roomData.players[currentPlayer.id]) {
-                        console.log('Player found in room, reconnecting...');
+                    currentPlayer.online = true;
+                    
+                    database.ref(`rooms/${roomId}/players/${currentPlayer.id}`).set(currentPlayer).then(() => {
+                        console.log('Successfully rejoined saved room');
                         
-                        // تحديث حالة الاتصال
-                        database.ref(`rooms/${roomId}/players/${currentPlayer.id}/online`).set(true);
-                        
-                        // إعداد المستمعين
                         setupGameListeners();
                         showGameScreen();
                         updateUrl();
                         
-                        // إضافة رسالة للسجل
                         setTimeout(() => {
-                            if (gameState) {
-                                addToLog(`${currentPlayer.name} عاد للروم`);
-                            }
+                            // تم إزالة رسالة العودة للروم
                         }, 1000);
                         
-                        console.log('Successfully reconnected to room');
-                    } else {
-                        console.log('Player not found in room, rejoining...');
-                        // إضافة اللاعب للروم مرة أخرى
-                        database.ref(`rooms/${roomId}/players/${currentPlayer.id}`).set(currentPlayer).then(() => {
-                            setupGameListeners();
-                            showGameScreen();
-                            updateUrl();
-                            
-                            setTimeout(() => {
-                                if (gameState) {
-                                    addToLog(`${currentPlayer.name} عاد للروم`);
-                                }
-                            }, 1000);
-                        }).catch((error) => {
-                            console.error('Error rejoining room:', error);
-                            handleReconnectionFailure();
-                        });
-                    }
+                    }).catch((error) => {
+                        console.error('Error rejoining saved room:', error);
+                        handleRejoinError();
+                    });
                 } else {
-                    console.log('Room no longer exists');
-                    handleReconnectionFailure('الروم لم يعد موجوداً');
+                    console.log('Saved room no longer exists');
+                    handleRejoinError();
                 }
             }).catch((error) => {
-                console.error('Error checking room:', error);
-                handleReconnectionFailure('خطأ في الاتصال بالروم');
+                console.error('Error checking saved room:', error);
+                handleRejoinError();
             });
         }
 
-        // معالجة فشل إعادة الاتصال
-        function handleReconnectionFailure(message = null) {
-            console.log('Reconnection failed, clearing saved state');
+        // معالجة خطأ إعادة الانضمام
+        function handleRejoinError() {
+            alert('لا يمكن العودة للجلسة المحفوظة. الروم قد يكون انتهى أو حدث خطأ.');
+            
             localStorage.removeItem('gameState');
+            
             currentPlayer = null;
             roomId = null;
             gameState = null;
             
-            if (message) {
-                alert(message + '. سيتم إعادتك لشاشة البداية.');
-            }
-            
-            // إظهار شاشة البداية
-            document.getElementById('gameScreen').style.display = 'none';
-            document.getElementById('startScreen').style.display = 'flex';
-            
-            // إزالة معرف الروم من الرابط
-            window.history.replaceState({}, '', window.location.pathname);
+            console.log('Staying on start screen due to rejoin error');
         }
 
-        // تحديث دالة proceedWithGame لحفظ الحالة
-        function proceedWithGameOriginal(name) {
-            // حفظ الاسم في التخزين المحلي
-            localStorage.setItem('playerName', name);
-            
-            currentPlayer = {
-                id: generateId(),
-                name: name,
-                online: true,
-                team: null,
-                role: 'player'
-            };
-
-            // إنشاء أو الانضمام لغرفة
-            const roomFromUrl = getRoomIdFromUrl();
-            
-            if (roomFromUrl) {
-                // الانضمام لغرفة موجودة - الدخول مباشرة بدون اختيار فريق
-                roomId = roomFromUrl;
-                console.log('Joining existing room from URL:', roomId);
-                joinExistingRoomDirectly();
-            } else {
-                // إنشاء غرفة جديدة - الذهاب مباشرة للعبة
-                roomId = generateRoomId();
-                console.log('Creating new room:', roomId);
-                joinRoom();
-            }
-            
-            // حفظ حالة اللاعب
-            savePlayerState();
-            
-            console.log('Starting game with room ID:', roomId);
-            console.log('Player:', currentPlayer);
-            console.log('Database ready:', !!database);
-            console.log('Firebase ready:', isFirebaseReady);
-        }
-
-        // التحقق من وجود معرف غرفة في الرابط عند تحميل الصفحة
-        window.addEventListener('load', () => {
-            const roomFromUrl = getRoomIdFromUrl();
-            const savedState = loadPlayerState();
-            
-            // إذا كان هناك رابط روم جديد مختلف عن الروم المحفوظ
-            if (roomFromUrl && savedState && savedState.roomId !== roomFromUrl) {
-                console.log('New room URL detected, leaving old room and joining new one');
-                
-                // إخراج اللاعب من الروم القديم
-                if (isFirebaseReady && database) {
-                    leaveOldRoomAndJoinNew(savedState, roomFromUrl);
-                } else {
-                    // انتظار Firebase ثم المتابعة
-                    const checkFirebase = setInterval(() => {
-                        if (isFirebaseReady && database) {
-                            clearInterval(checkFirebase);
-                            leaveOldRoomAndJoinNew(savedState, roomFromUrl);
-                        }
-                    }, 500);
-                    
-                    setTimeout(() => {
-                        clearInterval(checkFirebase);
-                        if (!isFirebaseReady) {
-                            console.log('Firebase timeout, clearing state and showing start screen');
-                            localStorage.removeItem('gameState');
-                            setupNewRoomJoin(roomFromUrl);
-                        }
-                    }, 10000);
-                }
-                return;
-            }
-            
-            // محاولة استرجاع حالة اللاعب المحفوظة إذا كان نفس الروم
-            if (savedState && (!roomFromUrl || savedState.roomId === roomFromUrl)) {
-                if (isFirebaseReady && database) {
-                    console.log('Found saved state, attempting reconnection...');
-                    reconnectToRoom(savedState);
-                    return;
-                } else {
-                    // انتظار Firebase ثم محاولة إعادة الاتصال
-                    console.log('Saved state found but Firebase not ready, waiting...');
-                    const checkFirebase = setInterval(() => {
-                        if (isFirebaseReady && database) {
-                            clearInterval(checkFirebase);
-                            reconnectToRoom(savedState);
-                        }
-                    }, 500);
-                    
-                    // انتهاء مهلة الانتظار بعد 10 ثوان
-                    setTimeout(() => {
-                        clearInterval(checkFirebase);
-                        if (!isFirebaseReady) {
-                            console.log('Firebase timeout, showing start screen');
-                            handleReconnectionFailure();
-                        }
-                    }, 10000);
-                    return;
-                }
-            }
-            
-            // إذا لم توجد حالة محفوظة أو كان هناك روم جديد، تابع بالطريقة العادية
-            if (roomFromUrl) {
-                setupNewRoomJoin(roomFromUrl);
+        // تنظيف الموارد عند إغلاق الصفحة
+        window.addEventListener('beforeunload', function() {
+            if (database && roomId && currentPlayer) {
+                database.ref(`rooms/${roomId}/players/${currentPlayer.id}/online`).set(false);
             }
         });
 
-        // إعداد الانضمام لروم جديد
-        function setupNewRoomJoin(roomFromUrl) {
-            roomId = roomFromUrl;
-            // تحديث عنوان شاشة البداية للانضمام
-            document.querySelector('.game-title').textContent = 'الانضمام للروم';
-            document.querySelector('.start-btn').textContent = 'انضم للروم';
-            document.querySelector('.name-input').placeholder = 'أدخل اسمك للانضمام';
-            
-            // إضافة معلومات الروم
-            const roomInfo = document.createElement('div');
-            roomInfo.style.cssText = `
-                background: #e3f2fd;
-                padding: 15px;
-                border-radius: 10px;
-                margin-bottom: 20px;
-                text-align: center;
-                border: 2px solid #2196f3;
-            `;
-            roomInfo.innerHTML = `
-                <div style="font-size: 1.1rem; font-weight: bold; color: #1976d2; margin-bottom: 5px;">
-                    🎮 دعوة للانضمام
-                </div>
-                <div style="font-size: 0.9rem; color: #666;">
-                    رقم الروم: <strong>${roomFromUrl}</strong>
-                </div>
-            `;
-            
-            const startScreen = document.querySelector('.start-screen');
-            const nameInput = document.getElementById('playerName');
-            
-            // إزالة معلومات الروم السابقة إن وجدت
-            const existingRoomInfo = startScreen.querySelector('[style*="background: #e3f2fd"]');
-            if (existingRoomInfo) {
-                existingRoomInfo.remove();
+        // معالجة تغيير حالة الاتصال
+        window.addEventListener('online', function() {
+            console.log('Connection restored');
+            if (database && roomId && currentPlayer) {
+                database.ref(`rooms/${roomId}/players/${currentPlayer.id}/online`).set(true);
             }
-            
-            startScreen.insertBefore(roomInfo, nameInput);
-            
-            // تعبئة الاسم المحفوظ إن وجد
-            const savedName = localStorage.getItem('playerName');
-            if (savedName) {
-                nameInput.value = savedName;
-            }
-        }
+        });
 
-        // ترك الروم القديم والانضمام للجديد
-        function leaveOldRoomAndJoinNew(savedState, newRoomId) {
-            console.log(`Leaving old room ${savedState.roomId} and joining new room ${newRoomId}`);
-            
-            // إزالة اللاعب من الروم القديم
-            database.ref(`rooms/${savedState.roomId}/players/${savedState.player.id}`).remove().then(() => {
-                console.log('Successfully left old room');
-                
-                // إضافة رسالة للسجل في الروم القديم
-                const logEntry = {
-                    message: `${savedState.player.name} غادر الروم`,
-                    timestamp: Date.now(),
-                    team: null
-                };
-                database.ref(`rooms/${savedState.roomId}/log`).push(logEntry).catch(() => {
-                    // تجاهل الأخطاء في السجل
-                });
-                
-                // مسح الحالة المحفوظة
-                localStorage.removeItem('gameState');
-                
-                // إعداد الانضمام للروم الجديد
-                setupNewRoomJoin(newRoomId);
-                
-            }).catch((error) => {
-                console.error('Error leaving old room:', error);
-                // حتى لو فشل ترك الروم القديم، امضِ قدماً للروم الجديد
-                localStorage.removeItem('gameState');
-                setupNewRoomJoin(newRoomId);
-            });
-        }
+        window.addEventListener('offline', function() {
+            console.log('Connection lost');
+        });
+
+        console.log('🎮 مرابط - تم تحميل الكود بنجاح');
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98c539e726875cea',t:'MTc2MDA4OTk1OS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98c6c65dd0c151ca',t:'MTc2MDEwNjE5OS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
