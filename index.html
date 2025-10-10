@@ -1071,9 +1071,9 @@
             const roomFromUrl = getRoomIdFromUrl();
             
             if (roomFromUrl) {
-                // الانضمام لغرفة موجودة - عرض شاشة اختيار الفريق
+                // الانضمام لغرفة موجودة - الدخول مباشرة بدون اختيار فريق
                 roomId = roomFromUrl;
-                showTeamSelectionScreen();
+                joinRoom();
             } else {
                 // إنشاء غرفة جديدة - الذهاب مباشرة للعبة
                 roomId = generateRoomId();
@@ -1224,21 +1224,27 @@
             database.ref(`rooms/${roomId}/players/${currentPlayer.id}`).set(currentPlayer).then(() => {
                 console.log('Player added to existing room');
                 
-                // إضافة رسالة للسجل
-                const teamText = currentPlayer.team ? 
-                    (currentPlayer.team === 'red' ? 'الأحمر' : 'الأزرق') : 
-                    'بدون فريق';
-                const roleText = currentPlayer.role === 'spy' ? 'سباي' : 'لاعب';
-                
-                if (currentPlayer.team) {
-                    addToLog(`${currentPlayer.name} انضم للفريق ${teamText} كـ ${roleText}`);
-                } else {
-                    addToLog(`${currentPlayer.name} انضم للروم`);
-                }
-                
+                // إعداد المستمعين أولاً
                 setupGameListeners();
                 showGameScreen();
                 updateUrl();
+                
+                // إضافة رسالة للسجل بعد تحميل gameState
+                setTimeout(() => {
+                    if (gameState) {
+                        const teamText = currentPlayer.team ? 
+                            (currentPlayer.team === 'red' ? 'الأحمر' : 'الأزرق') : 
+                            'بدون فريق';
+                        const roleText = currentPlayer.role === 'spy' ? 'سباي' : 'لاعب';
+                        
+                        if (currentPlayer.team) {
+                            addToLog(`${currentPlayer.name} انضم للفريق ${teamText} كـ ${roleText}`);
+                        } else {
+                            addToLog(`${currentPlayer.name} انضم للروم`);
+                        }
+                    }
+                }, 1000);
+                
             }).catch((error) => {
                 console.error('Error joining existing room:', error);
                 alert('حدث خطأ في الانضمام للغرفة');
@@ -1771,10 +1777,15 @@
 
         // إضافة للسجل
         function addToLog(message) {
+            if (!gameState || !database || !roomId) {
+                console.log('Cannot add to log: gameState, database, or roomId not ready');
+                return;
+            }
+            
             const logEntry = {
                 message: message,
                 timestamp: Date.now(),
-                team: gameState.currentTeam
+                team: gameState.currentTeam || null
             };
 
             database.ref(`rooms/${roomId}/log`).push(logEntry);
@@ -2366,5 +2377,5 @@
             }
         });
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98c245cdd63a5cea',t:'MTc2MDA1ODk5MC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98c25116d6605cea',t:'MTc2MDA1OTQ1Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
