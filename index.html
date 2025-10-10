@@ -193,19 +193,19 @@
         .cards-grid {
             display: grid;
             grid-template-columns: repeat(5, 1fr);
-            gap: 8px;
-            padding: 10px;
+            gap: 6px;
+            padding: 8px;
             background: rgba(255,255,255,0.1);
             border-radius: 15px;
-            height: 400px;
+            height: 380px;
             overflow: hidden;
             flex-shrink: 0;
         }
         
         .card {
             background: #f5f5dc;
-            border: 2px solid #ddd;
-            border-radius: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -213,12 +213,13 @@
             cursor: pointer;
             transition: all 0.3s;
             position: relative;
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             font-weight: bold;
             text-align: center;
-            padding: 4px;
-            height: 70px;
+            padding: 3px;
+            height: 65px;
             width: 100%;
+            box-sizing: border-box;
         }
         
         .card:hover {
@@ -403,9 +404,9 @@
         /* منطقة التلميح */
         .hint-area {
             background: rgba(255,255,255,0.95);
-            padding: 15px;
-            border-radius: 15px;
-            margin-bottom: 10px;
+            padding: 8px;
+            border-radius: 10px;
+            margin-bottom: 8px;
             display: none;
         }
         
@@ -415,11 +416,11 @@
         
         .hint-input {
             width: 100%;
-            padding: 10px;
-            border: 2px solid #ddd;
-            border-radius: 10px;
-            margin-bottom: 10px;
-            font-size: 1rem;
+            padding: 6px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            margin-bottom: 6px;
+            font-size: 0.9rem;
         }
         
         .hint-controls {
@@ -449,37 +450,39 @@
             background: #28a745;
             color: white;
             border: none;
-            padding: 10px 20px;
-            border-radius: 10px;
+            padding: 6px 12px;
+            border-radius: 6px;
             cursor: pointer;
             font-weight: bold;
+            font-size: 0.9rem;
         }
         
         .end-turn-btn {
             background: #ffc107;
             color: #333;
             border: none;
-            padding: 10px 20px;
-            border-radius: 10px;
+            padding: 6px 12px;
+            border-radius: 6px;
             cursor: pointer;
             font-weight: bold;
-            margin-top: 10px;
+            margin-top: 6px;
+            font-size: 0.9rem;
         }
 
         .end-turn-area {
             background: rgba(255,255,255,0.95);
-            padding: 15px;
-            border-radius: 15px;
-            margin-bottom: 10px;
+            padding: 8px;
+            border-radius: 10px;
+            margin-bottom: 8px;
             text-align: center;
         }
         
         /* منطقة عرض التلميح الجديدة */
         .hint-display-area {
             background: rgba(255,255,255,0.95);
-            padding: 15px;
-            border-radius: 15px;
-            margin-bottom: 10px;
+            padding: 8px;
+            border-radius: 10px;
+            margin-bottom: 8px;
         }
         
         .hint-display-container {
@@ -491,22 +494,22 @@
         
         .hint-box, .number-box {
             background: #f8f9fa;
-            padding: 15px;
-            border-radius: 10px;
+            padding: 8px;
+            border-radius: 6px;
             text-align: center;
-            border: 2px solid #ddd;
-            min-width: 120px;
+            border: 1px solid #ddd;
+            min-width: 80px;
         }
         
         .hint-label, .number-label {
-            font-size: 0.9rem;
+            font-size: 0.7rem;
             color: #666;
-            margin-bottom: 5px;
+            margin-bottom: 3px;
             font-weight: bold;
         }
         
         .hint-text, .number-text {
-            font-size: 1.2rem;
+            font-size: 0.9rem;
             font-weight: bold;
             color: #333;
         }
@@ -869,6 +872,7 @@
         <!-- شاشة البداية -->
         <div class="start-screen" id="startScreen">
             <h1 class="game-title">مرابط</h1>
+            <p style="font-size: 1rem; color: #666; margin-bottom: 30px; font-weight: 500;">برمجة: سلطان الحزام</p>
             <input type="text" class="name-input" id="playerName" placeholder="أدخل اسمك" maxlength="20">
             <button class="start-btn" onclick="startGame()">بدء اللعبة</button>
         </div>
@@ -918,10 +922,7 @@
                 </div>
             </div>
 
-            <!-- حالة اللعبة -->
-            <div class="game-status" id="gameStatus">
-                في انتظار اللاعبين...
-            </div>
+
 
             <!-- شبكة البطاقات -->
             <div class="cards-grid" id="cardsGrid"></div>
@@ -973,10 +974,7 @@
                 <!-- الفريق الأحمر -->
                 <div class="team-panel red">
                     <div class="team-title" style="color: #dc3545;">
-                        الفريق الأحمر
-                        <div style="font-size: 1.2rem; font-weight: bold; margin-top: 5px;">
-                            🔴 النقاط: <span id="redScore">8</span>
-                        </div>
+                        الفريق الأحمر <span id="redScore">8</span>
                     </div>
                     <div class="team-section">
                         <div class="section-title">اللاعبين:</div>
@@ -997,10 +995,7 @@
                 <!-- الفريق الأزرق -->
                 <div class="team-panel blue">
                     <div class="team-title" style="color: #007bff;">
-                        الفريق الأزرق
-                        <div style="font-size: 1.2rem; font-weight: bold; margin-top: 5px;">
-                            🔵 النقاط: <span id="blueScore">7</span>
-                        </div>
+                        الفريق الأزرق <span id="blueScore">7</span>
                     </div>
                     <div class="team-section">
                         <div class="section-title">اللاعبين:</div>
@@ -1050,15 +1045,12 @@
 
         // إظهار حالة الاتصال للمستخدم
         function showConnectionStatus(message, isError = false) {
-            const startBtn = document.querySelector('.start-btn');
-            if (startBtn) {
-                startBtn.textContent = message;
-                startBtn.style.background = isError ? '#dc3545' : '#28a745';
-                if (!isError) {
-                    setTimeout(() => {
-                        startBtn.textContent = 'بدء اللعبة';
-                        startBtn.style.background = '';
-                    }, 2000);
+            // إظهار رسائل الخطأ فقط
+            if (isError) {
+                const startBtn = document.querySelector('.start-btn');
+                if (startBtn) {
+                    startBtn.textContent = message;
+                    startBtn.style.background = '#dc3545';
                 }
             }
         }
@@ -1066,7 +1058,6 @@
         // تهيئة Firebase مع تشخيص مفصل
         function initializeFirebase() {
             console.log('🔄 بدء تهيئة Firebase...');
-            showConnectionStatus('جاري الاتصال...');
             
             try {
                 if (typeof firebase === 'undefined') {
@@ -1098,7 +1089,6 @@
                     testRef.remove();
                     
                     isFirebaseReady = true;
-                    showConnectionStatus('متصل بنجاح!');
                     console.log('🎉 Firebase جاهز للاستخدام!');
                     
                     setupConnectionMonitoring();
@@ -1265,7 +1255,6 @@
             
             if (!isFirebaseReady || !database) {
                 console.log('⏳ Firebase غير جاهز، محاولة إعادة الاتصال...');
-                showConnectionStatus('جاري إعادة الاتصال...');
                 
                 initializeFirebase();
                 
@@ -1907,17 +1896,9 @@
 
         // تحديث حالة اللعبة
         function updateGameStatus() {
-            const statusDiv = document.getElementById('gameStatus');
             const startBtn = document.getElementById('startGameBtn');
             
-            let scoreText = '';
-            if (gameState.phase !== 'waiting') {
-                scoreText = ` | 🔴 ${gameState.redScore} - 🔵 ${gameState.blueScore}`;
-            }
-            
             if (gameState.winner) {
-                statusDiv.textContent = `🏆 فاز الفريق ${gameState.winner === 'red' ? 'الأحمر' : 'الأزرق'}!${scoreText}`;
-                statusDiv.style.background = gameState.winner === 'red' ? '#ffebee' : '#e3f2fd';
                 startBtn.style.display = 'none';
             } else if (gameState.phase === 'waiting') {
                 const players = Object.values(gameState.players);
@@ -1930,51 +1911,10 @@
                 
                 if (gameState.creator === currentPlayer.id) {
                     startBtn.style.display = 'inline-block';
-                    
-                    if (redTeam.length >= 2 && blueTeam.length >= 2 && hasRedSpy && hasRedPlayers && hasBlueSpy && hasBluePlayer) {
-                        statusDiv.textContent = 'الفرق جاهزة! يمكن بدء اللعبة';
-                        statusDiv.style.background = '#d4edda';
-                        statusDiv.style.color = '#155724';
-                        statusDiv.style.border = '2px solid #28a745';
-                    } else {
-                        let missingText = 'يمكنك بدء اللعبة الآن أو انتظار: ';
-                        const missing = [];
-                        
-                        if (!hasRedSpy) missing.push('سباي أحمر');
-                        if (!hasRedPlayers) missing.push('لاعب أحمر');
-                        if (!hasBlueSpy) missing.push('سباي أزرق');
-                        if (!hasBluePlayer) missing.push('لاعب أزرق');
-                        
-                        if (missing.length > 0) {
-                            statusDiv.textContent = missingText + missing.join(' - ');
-                        } else {
-                            statusDiv.textContent = 'يمكنك بدء اللعبة الآن!';
-                        }
-                        
-                        statusDiv.style.background = '#e3f2fd';
-                        statusDiv.style.color = '#1976d2';
-                        statusDiv.style.border = '2px solid #2196f3';
-                    }
                 } else {
-                    statusDiv.textContent = 'اختر فريقك من الأسفل للانضمام';
-                    statusDiv.style.background = '#fff3cd';
-                    statusDiv.style.color = '#856404';
-                    statusDiv.style.border = '2px solid #ffc107';
                     startBtn.style.display = 'none';
                 }
-            } else if (gameState.phase === 'hint') {
-                const teamName = gameState.currentTeam === 'red' ? 'الأحمر' : 'الأزرق';
-                statusDiv.textContent = `🎯 دور الفريق ${teamName} - السباي يكتب التلميح${scoreText}`;
-                statusDiv.style.background = gameState.currentTeam === 'red' ? '#ffebee' : '#e3f2fd';
-                statusDiv.style.color = gameState.currentTeam === 'red' ? '#c62828' : '#1565c0';
-                statusDiv.style.border = `2px solid ${gameState.currentTeam === 'red' ? '#f44336' : '#2196f3'}`;
-                startBtn.style.display = 'none';
-            } else if (gameState.phase === 'guessing') {
-                const teamName = gameState.currentTeam === 'red' ? 'الأحمر' : 'الأزرق';
-                statusDiv.textContent = `🤔 دور الفريق ${teamName} - ${gameState.remainingGuesses} تخمينات متبقية${scoreText}`;
-                statusDiv.style.background = gameState.currentTeam === 'red' ? '#ffebee' : '#e3f2fd';
-                statusDiv.style.color = gameState.currentTeam === 'red' ? '#c62828' : '#1565c0';
-                statusDiv.style.border = `2px solid ${gameState.currentTeam === 'red' ? '#f44336' : '#2196f3'}`;
+            } else {
                 startBtn.style.display = 'none';
             }
         }
@@ -2099,26 +2039,18 @@
         // تحديث السجل مع التمرير التلقائي
         function updateLog() {
             const logDiv = document.getElementById('gameLog');
-            const wasAtBottom = logDiv.scrollTop + logDiv.clientHeight >= logDiv.scrollHeight - 5;
             
             logDiv.innerHTML = '';
 
             if (gameState.log) {
-                const sortedEntries = Object.values(gameState.log).sort((a, b) => a.timestamp - b.timestamp);
+                const sortedEntries = Object.values(gameState.log).sort((a, b) => b.timestamp - a.timestamp);
                 
-                sortedEntries.slice(-10).forEach(entry => {
+                sortedEntries.slice(0, 10).forEach(entry => {
                     const entryDiv = document.createElement('div');
                     entryDiv.className = `log-entry ${entry.team || ''}`;
                     entryDiv.textContent = entry.message;
                     logDiv.appendChild(entryDiv);
                 });
-            }
-
-            // التمرير التلقائي للأحداث الجديدة
-            if (wasAtBottom || logDiv.children.length <= 1) {
-                setTimeout(() => {
-                    logDiv.scrollTop = logDiv.scrollHeight;
-                }, 100);
             }
         }
 
@@ -2740,30 +2672,31 @@
                 document.getElementById('playerName').value = savedName;
             }
 
+            // إذا كان هناك رابط جديد، احذف الحالة القديمة مباشرة
+            const roomFromUrl = getRoomIdFromUrl();
+            if (roomFromUrl) {
+                localStorage.removeItem('gameState');
+                return;
+            }
+
             const savedState = loadPlayerState();
             if (savedState && savedState.roomId && savedState.player) {
                 console.log('Attempting to restore saved game state');
                 
-                const restoreMessage = `تم العثور على جلسة محفوظة:\nالروم: ${savedState.roomId}\nالاسم: ${savedState.player.name}\n\nهل تريد العودة إليها؟`;
+                currentPlayer = savedState.player;
+                roomId = savedState.roomId;
                 
-                if (confirm(restoreMessage)) {
-                    currentPlayer = savedState.player;
-                    roomId = savedState.roomId;
-                    
-                    document.getElementById('playerName').value = currentPlayer.name;
-                    
-                    if (isFirebaseReady && database) {
-                        rejoinSavedRoom();
-                    } else {
-                        const checkFirebase = setInterval(() => {
-                            if (isFirebaseReady && database) {
-                                clearInterval(checkFirebase);
-                                rejoinSavedRoom();
-                            }
-                        }, 500);
-                    }
+                document.getElementById('playerName').value = currentPlayer.name;
+                
+                if (isFirebaseReady && database) {
+                    rejoinSavedRoom();
                 } else {
-                    localStorage.removeItem('gameState');
+                    const checkFirebase = setInterval(() => {
+                        if (isFirebaseReady && database) {
+                            clearInterval(checkFirebase);
+                            rejoinSavedRoom();
+                        }
+                    }, 500);
                 }
             }
         });
@@ -2839,6 +2772,5 @@
 
         console.log('🎮 مرابط - تم تحميل الكود بنجاح مع جميع التحسينات');
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98c84828e0d15cea',t:'MTc2MDEyMjAwMS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98c870d6e1bf5cea',t:'MTc2MDEyMzY2Ny4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
-
