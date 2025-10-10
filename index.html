@@ -1894,29 +1894,55 @@
                 const hasBlueSpy = blueTeam.some(p => p.role === 'spy');
                 const hasBluePlayer = blueTeam.some(p => p.role === 'player');
                 
-                if (redTeam.length >= 2 && blueTeam.length >= 2 && hasRedSpy && hasRedPlayers && hasBlueSpy && hasBluePlayer) {
-                    statusDiv.textContent = 'الفرق جاهزة! يمكن بدء اللعبة';
-                    statusDiv.style.background = '#d4edda';
-                    statusDiv.style.color = '#155724';
-                    statusDiv.style.border = '2px solid #28a745';
+                // المنشئ يمكنه بدء اللعبة في أي وقت
+                if (gameState.creator === currentPlayer.id) {
+                    startBtn.style.display = 'inline-block';
                     
-                    // إظهار زر البدء للمنشئ فقط
-                    if (gameState.creator === currentPlayer.id) {
-                        startBtn.style.display = 'inline-block';
+                    if (redTeam.length >= 2 && blueTeam.length >= 2 && hasRedSpy && hasRedPlayers && hasBlueSpy && hasBluePlayer) {
+                        statusDiv.textContent = 'الفرق جاهزة! يمكن بدء اللعبة';
+                        statusDiv.style.background = '#d4edda';
+                        statusDiv.style.color = '#155724';
+                        statusDiv.style.border = '2px solid #28a745';
+                    } else {
+                        let missingText = 'يمكنك بدء اللعبة الآن أو انتظار: ';
+                        const missing = [];
+                        
+                        if (!hasRedSpy) missing.push('سباي أحمر');
+                        if (!hasRedPlayers) missing.push('لاعب أحمر');
+                        if (!hasBlueSpy) missing.push('سباي أزرق');
+                        if (!hasBluePlayer) missing.push('لاعب أزرق');
+                        
+                        if (missing.length > 0) {
+                            statusDiv.textContent = missingText + missing.join(' - ');
+                        } else {
+                            statusDiv.textContent = 'يمكنك بدء اللعبة الآن!';
+                        }
+                        
+                        statusDiv.style.background = '#e3f2fd';
+                        statusDiv.style.color = '#1976d2';
+                        statusDiv.style.border = '2px solid #2196f3';
                     }
                 } else {
-                    let missingText = 'في انتظار: ';
-                    const missing = [];
-                    
-                    if (!hasRedSpy) missing.push('سباي أحمر');
-                    if (!hasRedPlayers) missing.push('لاعب أحمر');
-                    if (!hasBlueSpy) missing.push('سباي أزرق');
-                    if (!hasBluePlayer) missing.push('لاعب أزرق');
-                    
-                    statusDiv.textContent = missingText + missing.join(' - ');
-                    statusDiv.style.background = '#fff3cd';
-                    statusDiv.style.color = '#856404';
-                    statusDiv.style.border = '2px solid #ffc107';
+                    // للاعبين العاديين
+                    if (redTeam.length >= 2 && blueTeam.length >= 2 && hasRedSpy && hasRedPlayers && hasBlueSpy && hasBluePlayer) {
+                        statusDiv.textContent = 'الفرق جاهزة! في انتظار المنشئ لبدء اللعبة';
+                        statusDiv.style.background = '#d4edda';
+                        statusDiv.style.color = '#155724';
+                        statusDiv.style.border = '2px solid #28a745';
+                    } else {
+                        let missingText = 'في انتظار: ';
+                        const missing = [];
+                        
+                        if (!hasRedSpy) missing.push('سباي أحمر');
+                        if (!hasRedPlayers) missing.push('لاعب أحمر');
+                        if (!hasBlueSpy) missing.push('سباي أزرق');
+                        if (!hasBluePlayer) missing.push('لاعب أزرق');
+                        
+                        statusDiv.textContent = missingText + missing.join(' - ');
+                        statusDiv.style.background = '#fff3cd';
+                        statusDiv.style.color = '#856404';
+                        statusDiv.style.border = '2px solid #ffc107';
+                    }
                     startBtn.style.display = 'none';
                 }
             } else if (gameState.phase === 'hint') {
@@ -2006,7 +2032,7 @@
                 return;
             }
 
-            // التحقق من وجود الفرق المطلوبة
+            // التحقق من وجود لاعبين أساسيين (اختياري)
             const players = Object.values(gameState.players);
             const redTeam = players.filter(p => p.team === 'red');
             const blueTeam = players.filter(p => p.team === 'blue');
@@ -2015,9 +2041,19 @@
             const hasBlueSpy = blueTeam.some(p => p.role === 'spy');
             const hasBluePlayer = blueTeam.some(p => p.role === 'player');
 
+            // تحذير إذا لم تكن الفرق مكتملة، لكن السماح بالبدء
             if (!hasRedSpy || !hasRedPlayers || !hasBlueSpy || !hasBluePlayer) {
-                alert('يجب وجود سباي ولاعب واحد على الأقل في كل فريق لبدء اللعبة');
-                return;
+                const missingRoles = [];
+                if (!hasRedSpy) missingRoles.push('سباي أحمر');
+                if (!hasRedPlayers) missingRoles.push('لاعب أحمر');
+                if (!hasBlueSpy) missingRoles.push('سباي أزرق');
+                if (!hasBluePlayer) missingRoles.push('لاعب أزرق');
+                
+                const confirmMessage = `تحذير: الفرق غير مكتملة!\nناقص: ${missingRoles.join(' - ')}\n\nهل تريد بدء اللعبة رغم ذلك؟`;
+                
+                if (!confirm(confirmMessage)) {
+                    return;
+                }
             }
 
             // بدء اللعبة - تغيير المرحلة إلى hint
@@ -2848,73 +2884,147 @@
 
         // التحقق من وجود معرف غرفة في الرابط عند تحميل الصفحة
         window.addEventListener('load', () => {
-            // محاولة استرجاع حالة اللاعب المحفوظة أولاً
+            const roomFromUrl = getRoomIdFromUrl();
             const savedState = loadPlayerState();
             
-            if (savedState && isFirebaseReady && database) {
-                console.log('Found saved state, attempting reconnection...');
-                reconnectToRoom(savedState);
-                return;
-            } else if (savedState && !isFirebaseReady) {
-                // انتظار Firebase ثم محاولة إعادة الاتصال
-                console.log('Saved state found but Firebase not ready, waiting...');
-                const checkFirebase = setInterval(() => {
-                    if (isFirebaseReady && database) {
-                        clearInterval(checkFirebase);
-                        reconnectToRoom(savedState);
-                    }
-                }, 500);
+            // إذا كان هناك رابط روم جديد مختلف عن الروم المحفوظ
+            if (roomFromUrl && savedState && savedState.roomId !== roomFromUrl) {
+                console.log('New room URL detected, leaving old room and joining new one');
                 
-                // انتهاء مهلة الانتظار بعد 10 ثوان
-                setTimeout(() => {
-                    clearInterval(checkFirebase);
-                    if (!isFirebaseReady) {
-                        console.log('Firebase timeout, showing start screen');
-                        handleReconnectionFailure();
-                    }
-                }, 10000);
+                // إخراج اللاعب من الروم القديم
+                if (isFirebaseReady && database) {
+                    leaveOldRoomAndJoinNew(savedState, roomFromUrl);
+                } else {
+                    // انتظار Firebase ثم المتابعة
+                    const checkFirebase = setInterval(() => {
+                        if (isFirebaseReady && database) {
+                            clearInterval(checkFirebase);
+                            leaveOldRoomAndJoinNew(savedState, roomFromUrl);
+                        }
+                    }, 500);
+                    
+                    setTimeout(() => {
+                        clearInterval(checkFirebase);
+                        if (!isFirebaseReady) {
+                            console.log('Firebase timeout, clearing state and showing start screen');
+                            localStorage.removeItem('gameState');
+                            setupNewRoomJoin(roomFromUrl);
+                        }
+                    }, 10000);
+                }
                 return;
             }
             
-            // إذا لم توجد حالة محفوظة، تابع بالطريقة العادية
-            const roomFromUrl = getRoomIdFromUrl();
-            if (roomFromUrl) {
-                roomId = roomFromUrl;
-                // تحديث عنوان شاشة البداية للانضمام
-                document.querySelector('.game-title').textContent = 'الانضمام للروم';
-                document.querySelector('.start-btn').textContent = 'انضم للروم';
-                document.querySelector('.name-input').placeholder = 'أدخل اسمك للانضمام';
-                
-                // إضافة معلومات الروم
-                const roomInfo = document.createElement('div');
-                roomInfo.style.cssText = `
-                    background: #e3f2fd;
-                    padding: 15px;
-                    border-radius: 10px;
-                    margin-bottom: 20px;
-                    text-align: center;
-                    border: 2px solid #2196f3;
-                `;
-                roomInfo.innerHTML = `
-                    <div style="font-size: 1.1rem; font-weight: bold; color: #1976d2; margin-bottom: 5px;">
-                        🎮 دعوة للانضمام
-                    </div>
-                    <div style="font-size: 0.9rem; color: #666;">
-                        رقم الروم: <strong>${roomFromUrl}</strong>
-                    </div>
-                `;
-                
-                const startScreen = document.querySelector('.start-screen');
-                const nameInput = document.getElementById('playerName');
-                startScreen.insertBefore(roomInfo, nameInput);
-                
-                // تعبئة الاسم المحفوظ إن وجد
-                const savedName = localStorage.getItem('playerName');
-                if (savedName) {
-                    nameInput.value = savedName;
+            // محاولة استرجاع حالة اللاعب المحفوظة إذا كان نفس الروم
+            if (savedState && (!roomFromUrl || savedState.roomId === roomFromUrl)) {
+                if (isFirebaseReady && database) {
+                    console.log('Found saved state, attempting reconnection...');
+                    reconnectToRoom(savedState);
+                    return;
+                } else {
+                    // انتظار Firebase ثم محاولة إعادة الاتصال
+                    console.log('Saved state found but Firebase not ready, waiting...');
+                    const checkFirebase = setInterval(() => {
+                        if (isFirebaseReady && database) {
+                            clearInterval(checkFirebase);
+                            reconnectToRoom(savedState);
+                        }
+                    }, 500);
+                    
+                    // انتهاء مهلة الانتظار بعد 10 ثوان
+                    setTimeout(() => {
+                        clearInterval(checkFirebase);
+                        if (!isFirebaseReady) {
+                            console.log('Firebase timeout, showing start screen');
+                            handleReconnectionFailure();
+                        }
+                    }, 10000);
+                    return;
                 }
             }
+            
+            // إذا لم توجد حالة محفوظة أو كان هناك روم جديد، تابع بالطريقة العادية
+            if (roomFromUrl) {
+                setupNewRoomJoin(roomFromUrl);
+            }
         });
+
+        // إعداد الانضمام لروم جديد
+        function setupNewRoomJoin(roomFromUrl) {
+            roomId = roomFromUrl;
+            // تحديث عنوان شاشة البداية للانضمام
+            document.querySelector('.game-title').textContent = 'الانضمام للروم';
+            document.querySelector('.start-btn').textContent = 'انضم للروم';
+            document.querySelector('.name-input').placeholder = 'أدخل اسمك للانضمام';
+            
+            // إضافة معلومات الروم
+            const roomInfo = document.createElement('div');
+            roomInfo.style.cssText = `
+                background: #e3f2fd;
+                padding: 15px;
+                border-radius: 10px;
+                margin-bottom: 20px;
+                text-align: center;
+                border: 2px solid #2196f3;
+            `;
+            roomInfo.innerHTML = `
+                <div style="font-size: 1.1rem; font-weight: bold; color: #1976d2; margin-bottom: 5px;">
+                    🎮 دعوة للانضمام
+                </div>
+                <div style="font-size: 0.9rem; color: #666;">
+                    رقم الروم: <strong>${roomFromUrl}</strong>
+                </div>
+            `;
+            
+            const startScreen = document.querySelector('.start-screen');
+            const nameInput = document.getElementById('playerName');
+            
+            // إزالة معلومات الروم السابقة إن وجدت
+            const existingRoomInfo = startScreen.querySelector('[style*="background: #e3f2fd"]');
+            if (existingRoomInfo) {
+                existingRoomInfo.remove();
+            }
+            
+            startScreen.insertBefore(roomInfo, nameInput);
+            
+            // تعبئة الاسم المحفوظ إن وجد
+            const savedName = localStorage.getItem('playerName');
+            if (savedName) {
+                nameInput.value = savedName;
+            }
+        }
+
+        // ترك الروم القديم والانضمام للجديد
+        function leaveOldRoomAndJoinNew(savedState, newRoomId) {
+            console.log(`Leaving old room ${savedState.roomId} and joining new room ${newRoomId}`);
+            
+            // إزالة اللاعب من الروم القديم
+            database.ref(`rooms/${savedState.roomId}/players/${savedState.player.id}`).remove().then(() => {
+                console.log('Successfully left old room');
+                
+                // إضافة رسالة للسجل في الروم القديم
+                const logEntry = {
+                    message: `${savedState.player.name} غادر الروم`,
+                    timestamp: Date.now(),
+                    team: null
+                };
+                database.ref(`rooms/${savedState.roomId}/log`).push(logEntry).catch(() => {
+                    // تجاهل الأخطاء في السجل
+                });
+                
+                // مسح الحالة المحفوظة
+                localStorage.removeItem('gameState');
+                
+                // إعداد الانضمام للروم الجديد
+                setupNewRoomJoin(newRoomId);
+                
+            }).catch((error) => {
+                console.error('Error leaving old room:', error);
+                // حتى لو فشل ترك الروم القديم، امضِ قدماً للروم الجديد
+                localStorage.removeItem('gameState');
+                setupNewRoomJoin(newRoomId);
+            });
+        }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98c28c8cf1195cea',t:'MTc2MDA2MTg4OC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98c539e726875cea',t:'MTc2MDA4OTk1OS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
