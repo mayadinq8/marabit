@@ -113,25 +113,59 @@
             border-radius: 10px;
             font-size: 0.9rem;
             cursor: pointer;
-            transition: background 0.2s;
+            transition: all 0.2s;
+            border: 2px solid transparent;
         }
         
         .toolbar-item:hover {
             background: #e9ecef;
+            transform: translateY(-1px);
         }
         
-        .reset-btn, .copy-link-btn {
+        .toolbar-btn {
             background: #28a745;
             color: white;
-            border: none;
+            border: 2px solid #28a745;
             padding: 8px 15px;
             border-radius: 10px;
             cursor: pointer;
             font-size: 0.9rem;
+            transition: all 0.2s;
+            font-weight: bold;
         }
         
-        .reset-btn:hover, .copy-link-btn:hover {
+        .toolbar-btn:hover {
             background: #218838;
+            border-color: #218838;
+            transform: translateY(-1px);
+        }
+        
+        .toolbar-btn.secondary {
+            background: #ffc107;
+            color: #333;
+            border-color: #ffc107;
+        }
+        
+        .toolbar-btn.secondary:hover {
+            background: #e0a800;
+            border-color: #e0a800;
+        }
+        
+        .player-name-btn {
+            background: #f8f9fa;
+            border: 2px solid #28a745;
+            color: #333;
+            padding: 8px 12px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+            font-weight: bold;
+        }
+        
+        .player-name-btn:hover {
+            background: #e8f5e8;
+            transform: translateY(-1px);
         }
         
         /* منطقة اللعب الرئيسية */
@@ -454,15 +488,15 @@
         <div class="game-screen" id="gameScreen">
             <!-- شريط الأدوات -->
             <div class="toolbar">
-                <div class="toolbar-item" id="playersCount">
+                <div class="toolbar-item" id="playersCount" onclick="showPlayersManagement()">
                     👥 <span id="playerCountNum">0</span>
                 </div>
-                <button class="reset-btn" onclick="resetGame()">Reset Game</button>
-                <div class="toolbar-item" id="playerNameBtn" onclick="changePlayerName()">
+                <button class="toolbar-btn" onclick="resetGame()">إعادة تشغيل</button>
+                <div class="player-name-btn" id="playerNameBtn" onclick="changePlayerName()">
                     <span id="currentPlayerName"></span>
                 </div>
-                <button class="copy-link-btn" onclick="copyRoomLink()">نسخ رابط الروم</button>
-                <button class="reset-btn" onclick="leaveTeam()" id="leaveTeamBtn" style="background: #ffc107; color: #333; display: none;">ترك الفريق</button>
+                <button class="toolbar-btn" onclick="copyRoomLink()">نسخ رابط الروم</button>
+                <button class="toolbar-btn secondary" onclick="leaveTeam()" id="leaveTeamBtn" style="display: none;">ترك الفريق</button>
             </div>
 
             <!-- حالة اللعبة -->
@@ -548,24 +582,141 @@
             measurementId: "G-RKN2F3HVHS"
         };
 
-        // تهيئة Firebase مع معالجة الأخطاء
-        try {
-            firebase.initializeApp(firebaseConfig);
-            const database = firebase.database();
-            console.log('Firebase initialized successfully');
+        // متغيرات عامة
+        let database;
+        let isFirebaseReady = false;
+        let connectionAttempts = 0;
+        const maxConnectionAttempts = 3;
+
+        // إظهار حالة الاتصال للمستخدم
+        function showConnectionStatus(message, isError = false) {
+            const startBtn = document.querySelector('.start-btn');
+            if (startBtn) {
+                startBtn.textContent = message;
+                startBtn.style.background = isError ? '#dc3545' : '#28a745';
+                if (!isError) {
+                    setTimeout(() => {
+                        startBtn.textContent = 'بدء اللعبة';
+                        startBtn.style.background = '';
+                    }, 2000);
+                }
+            }
+        }
+
+        // تهيئة Firebase مع تشخيص مفصل
+        function initializeFirebase() {
+            console.log('🔄 بدء تهيئة Firebase...');
+            showConnectionStatus('جاري الاتصال...');
             
-            // اختبار الاتصال
-            database.ref('.info/connected').on('value', (snapshot) => {
-                if (snapshot.val() === true) {
-                    console.log('Connected to Firebase');
+            try {
+                // التحقق من وجود Firebase
+                if (typeof firebase === 'undefined') {
+                    throw new Error('Firebase SDK غير محمل');
+                }
+
+                // تهيئة Firebase
+                if (!firebase.apps.length) {
+                    console.log('📱 تهيئة تطبيق Firebase...');
+                    firebase.initializeApp(firebaseConfig);
                 } else {
-                    console.log('Disconnected from Firebase');
+                    console.log('📱 Firebase مهيأ مسبقاً');
+                }
+
+                // الحصول على مرجع قاعدة البيانات
+                database = firebase.database();
+                console.log('💾 تم الحصول على مرجع قاعدة البيانات');
+
+                // اختبار الاتصال الأساسي
+                console.log('🔍 اختبار الاتصال...');
+                
+                // اختبار بسيط للكتابة والقراءة
+                const testRef = database.ref('test');
+                const testData = { timestamp: Date.now(), test: true };
+                
+                testRef.set(testData).then(() => {
+                    console.log('✅ اختبار الكتابة نجح');
+                    
+                    return testRef.once('value');
+                }).then((snapshot) => {
+                    console.log('✅ اختبار القراءة نجح:', snapshot.val());
+                    
+                    // حذف البيانات التجريبية
+                    testRef.remove();
+                    
+                    isFirebaseReady = true;
+                    showConnectionStatus('متصل بنجاح!');
+                    console.log('🎉 Firebase جاهز للاستخدام!');
+                    
+                    // إعداد مراقبة الاتصال
+                    setupConnectionMonitoring();
+                    
+                }).catch((error) => {
+                    console.error('❌ فشل اختبار Firebase:', error);
+                    handleConnectionError(error);
+                });
+
+            } catch (error) {
+                console.error('❌ خطأ في تهيئة Firebase:', error);
+                handleConnectionError(error);
+            }
+        }
+
+        // إعداد مراقبة الاتصال
+        function setupConnectionMonitoring() {
+            const connectedRef = database.ref('.info/connected');
+            connectedRef.on('value', (snapshot) => {
+                if (snapshot.val() === true) {
+                    console.log('🟢 متصل بـ Firebase');
+                    isFirebaseReady = true;
+                } else {
+                    console.log('🔴 منقطع عن Firebase');
+                    isFirebaseReady = false;
                 }
             });
-        } catch (error) {
-            console.error('Firebase initialization error:', error);
-            alert('حدث خطأ في تهيئة قاعدة البيانات');
         }
+
+        // معالجة أخطاء الاتصال
+        function handleConnectionError(error) {
+            console.error('تفاصيل الخطأ:', {
+                code: error.code,
+                message: error.message,
+                stack: error.stack
+            });
+
+            let errorMessage = 'خطأ في الاتصال';
+            
+            if (error.code === 'PERMISSION_DENIED') {
+                errorMessage = 'ليس لديك صلاحية';
+                console.error('🚫 مشكلة في الصلاحيات - تحقق من قواعد Firebase');
+            } else if (error.code === 'NETWORK_ERROR' || error.message.includes('network')) {
+                errorMessage = 'مشكلة في الشبكة';
+                console.error('🌐 مشكلة في الشبكة');
+            } else if (error.message.includes('Firebase SDK')) {
+                errorMessage = 'مشكلة في التحميل';
+                console.error('📦 مشكلة في تحميل Firebase SDK');
+            }
+
+            showConnectionStatus(errorMessage, true);
+            isFirebaseReady = false;
+
+            // محاولة إعادة الاتصال
+            if (connectionAttempts < maxConnectionAttempts) {
+                connectionAttempts++;
+                console.log(`🔄 محاولة إعادة الاتصال ${connectionAttempts}/${maxConnectionAttempts}`);
+                setTimeout(() => {
+                    initializeFirebase();
+                }, 3000 * connectionAttempts);
+            } else {
+                console.error('❌ فشل في جميع محاولات الاتصال');
+                showConnectionStatus('فشل الاتصال نهائياً', true);
+            }
+        }
+
+        // بدء تهيئة Firebase عند تحميل الصفحة
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('📄 تم تحميل الصفحة، بدء تهيئة Firebase...');
+            initializeFirebase();
+        });
 
         // متغيرات اللعبة
         let currentPlayer = null;
@@ -577,7 +728,9 @@
         const gameWords = [
             'شمس', 'قمر', 'نجم', 'بحر', 'جبل', 'شجر', 'زهر', 'طير', 'سمك', 'أسد',
             'فيل', 'حصان', 'كتاب', 'قلم', 'ورق', 'باب', 'نافذة', 'كرسي', 'طاولة', 'سرير',
-            'ماء', 'نار', 'هواء', 'تراب', 'ذهب'
+            'ماء', 'نار', 'هواء', 'تراب', 'ذهب', 'فضة', 'حديد', 'خشب', 'حجر', 'زجاج',
+            'سيارة', 'طائرة', 'قطار', 'سفينة', 'دراجة', 'حاسوب', 'هاتف', 'تلفاز', 'راديو', 'ساعة',
+            'مدرسة', 'بيت', 'مستشفى', 'مطعم', 'حديقة', 'شارع', 'مدينة', 'قرية', 'صحراء', 'غابة'
         ];
 
         // بدء اللعبة
@@ -588,6 +741,67 @@
                 return;
             }
 
+            console.log('🎮 محاولة بدء اللعبة...');
+            console.log('📊 حالة Firebase:', { isFirebaseReady, database: !!database });
+
+            const startBtn = document.querySelector('.start-btn');
+            
+            // التحقق من جاهزية Firebase
+            if (!isFirebaseReady || !database) {
+                console.log('⏳ Firebase غير جاهز، محاولة إعادة الاتصال...');
+                showConnectionStatus('جاري إعادة الاتصال...');
+                
+                // محاولة إعادة تهيئة Firebase
+                initializeFirebase();
+                
+                // انتظار الاتصال
+                let attempts = 0;
+                const maxAttempts = 15;
+                const checkConnection = setInterval(() => {
+                    attempts++;
+                    console.log(`🔄 فحص الاتصال ${attempts}/${maxAttempts}`);
+                    
+                    if (isFirebaseReady && database) {
+                        clearInterval(checkConnection);
+                        console.log('✅ Firebase جاهز، بدء اللعبة...');
+                        proceedWithGame(name);
+                    } else if (attempts >= maxAttempts) {
+                        clearInterval(checkConnection);
+                        console.error('❌ انتهت مهلة الانتظار');
+                        showConnectionStatus('فشل الاتصال', true);
+                        
+                        // عرض تفاصيل المشكلة للمستخدم
+                        const errorDetails = `
+                        حدثت مشكلة في الاتصال:
+                        
+                        🔍 تشخيص المشكلة:
+                        - Firebase SDK: ${typeof firebase !== 'undefined' ? '✅ محمل' : '❌ غير محمل'}
+                        - قاعدة البيانات: ${database ? '✅ متاحة' : '❌ غير متاحة'}
+                        - حالة الاتصال: ${isFirebaseReady ? '✅ متصل' : '❌ غير متصل'}
+                        
+                        💡 الحلول المقترحة:
+                        1. تحقق من اتصالك بالإنترنت
+                        2. أعد تحميل الصفحة
+                        3. جرب متصفح آخر
+                        4. تأكد من أن Firebase مُعد بشكل صحيح
+                        `;
+                        
+                        alert(errorDetails);
+                    }
+                }, 1000);
+                
+                return;
+            }
+
+            console.log('✅ Firebase جاهز، بدء اللعبة مباشرة...');
+            proceedWithGame(name);
+        }
+
+        // متابعة بدء اللعبة بعد التأكد من الاتصال
+        function proceedWithGame(name) {
+            // حفظ الاسم في التخزين المحلي
+            localStorage.setItem('playerName', name);
+            
             currentPlayer = {
                 id: generateId(),
                 name: name,
@@ -601,6 +815,8 @@
             
             console.log('Starting game with room ID:', roomId);
             console.log('Player:', currentPlayer);
+            console.log('Database ready:', !!database);
+            console.log('Firebase ready:', isFirebaseReady);
             
             joinRoom();
         }
@@ -624,10 +840,27 @@
         // الانضمام للغرفة
         function joinRoom() {
             console.log('Joining room:', roomId);
+            
+            if (!database) {
+                console.error('Database not initialized');
+                alert('قاعدة البيانات غير جاهزة، يرجى إعادة المحاولة');
+                return;
+            }
+            
+            // إضافة timeout للعملية
             const roomRef = database.ref(`rooms/${roomId}`);
             
+            // تعيين timeout
+            const timeoutId = setTimeout(() => {
+                console.error('Room join timeout');
+                alert('انتهت مهلة الاتصال. يرجى المحاولة مرة أخرى.');
+            }, 15000);
+            
             roomRef.once('value', (snapshot) => {
+                clearTimeout(timeoutId);
                 console.log('Room snapshot exists:', snapshot.exists());
+                console.log('Room data:', snapshot.val());
+                
                 if (!snapshot.exists()) {
                     // إنشاء غرفة جديدة
                     console.log('Creating new room');
@@ -638,41 +871,86 @@
                     joinExistingRoom();
                 }
             }).catch((error) => {
+                clearTimeout(timeoutId);
                 console.error('Error joining room:', error);
-                alert('حدث خطأ في الاتصال بقاعدة البيانات');
+                console.error('Error details:', {
+                    code: error.code,
+                    message: error.message,
+                    details: error.details
+                });
+                
+                // محاولة تشخيص المشكلة
+                if (error.code === 'PERMISSION_DENIED') {
+                    alert('ليس لديك صلاحية للوصول إلى قاعدة البيانات. يرجى التحقق من إعدادات Firebase.');
+                } else if (error.code === 'NETWORK_ERROR') {
+                    alert('خطأ في الشبكة. يرجى التحقق من الاتصال بالإنترنت.');
+                } else {
+                    alert('حدث خطأ في الاتصال بقاعدة البيانات: ' + error.message);
+                }
             });
         }
 
         // إنشاء غرفة جديدة
         function createNewRoom() {
             console.log('Creating new room with ID:', roomId);
-            const newGameState = {
-                players: {},
-                cards: generateCards(),
-                currentTeam: 'red',
-                phase: 'waiting', // waiting, hint, guessing
-                hint: null,
-                remainingGuesses: 0,
-                log: [],
-                redScore: 8,
-                blueScore: 8,
-                winner: null,
-                creator: currentPlayer.id,
-                allowTeamChange: true
-            };
+            
+            try {
+                const cards = generateCards();
+                console.log('Cards generated successfully:', cards.length);
+                
+                // التحقق من صحة البطاقات
+                const validCards = cards.every(card => 
+                    card && 
+                    typeof card.id === 'number' && 
+                    typeof card.word === 'string' && 
+                    typeof card.color === 'string' && 
+                    typeof card.revealed === 'boolean' &&
+                    card.votes !== undefined
+                );
+                
+                if (!validCards) {
+                    throw new Error('Invalid cards generated');
+                }
+                
+                const newGameState = {
+                    players: {},
+                    cards: cards,
+                    currentTeam: 'red',
+                    phase: 'waiting',
+                    hint: null,
+                    remainingGuesses: 0,
+                    log: {},
+                    redScore: 8,
+                    blueScore: 7,
+                    winner: null,
+                    creator: currentPlayer.id,
+                    allowTeamChange: true
+                };
 
-            newGameState.players[currentPlayer.id] = currentPlayer;
-            console.log('New game state:', newGameState);
+                newGameState.players[currentPlayer.id] = {
+                    id: currentPlayer.id,
+                    name: currentPlayer.name,
+                    online: true,
+                    team: null,
+                    role: 'player'
+                };
+                
+                console.log('New game state prepared:', newGameState);
 
-            database.ref(`rooms/${roomId}`).set(newGameState).then(() => {
-                console.log('Room created successfully');
-                setupGameListeners();
-                showGameScreen();
-                updateUrl();
-            }).catch((error) => {
-                console.error('Error creating room:', error);
-                alert('حدث خطأ في إنشاء الغرفة');
-            });
+                database.ref(`rooms/${roomId}`).set(newGameState).then(() => {
+                    console.log('Room created successfully');
+                    setupGameListeners();
+                    showGameScreen();
+                    updateUrl();
+                }).catch((error) => {
+                    console.error('Error creating room:', error);
+                    alert('حدث خطأ في إنشاء الغرفة: ' + error.message);
+                });
+                
+            } catch (error) {
+                console.error('Error in createNewRoom:', error);
+                alert('حدث خطأ في إعداد اللعبة: ' + error.message);
+            }
         }
 
         // الانضمام لغرفة موجودة
@@ -692,25 +970,42 @@
         // إنشاء البطاقات
         function generateCards() {
             const cards = [];
-            const shuffledWords = [...gameWords].sort(() => Math.random() - 0.5);
             
-            // تحديد ألوان البطاقات
-            const colors = ['red', 'red', 'red', 'red', 'red', 'red', 'red', 'red',
-                           'blue', 'blue', 'blue', 'blue', 'blue', 'blue', 'blue', 'blue',
-                           'black', 'neutral', 'neutral', 'neutral', 'neutral', 'neutral', 'neutral', 'neutral'];
+            // التأكد من وجود كلمات كافية
+            const availableWords = [...gameWords];
+            while (availableWords.length < 25) {
+                availableWords.push(`كلمة${availableWords.length + 1}`);
+            }
+            const shuffledWords = availableWords.slice(0, 25).sort(() => Math.random() - 0.5);
             
-            const shuffledColors = colors.sort(() => Math.random() - 0.5);
+            // تحديد ألوان البطاقات (8 أحمر، 7 أزرق، 1 أسود، 9 محايد)
+            const colors = [
+                'red', 'red', 'red', 'red', 'red', 'red', 'red', 'red',
+                'blue', 'blue', 'blue', 'blue', 'blue', 'blue', 'blue',
+                'black',
+                'neutral', 'neutral', 'neutral', 'neutral', 'neutral', 'neutral', 'neutral', 'neutral', 'neutral'
+            ];
+            
+            // التأكد من أن لدينا 25 لون بالضبط
+            while (colors.length < 25) {
+                colors.push('neutral');
+            }
+            
+            const shuffledColors = colors.slice(0, 25).sort(() => Math.random() - 0.5);
 
             for (let i = 0; i < 25; i++) {
                 cards.push({
                     id: i,
-                    word: shuffledWords[i],
-                    color: shuffledColors[i],
+                    word: shuffledWords[i] || `كلمة${i + 1}`,
+                    color: shuffledColors[i] || 'neutral',
                     revealed: false,
                     votes: {}
                 });
             }
 
+            console.log('Generated cards:', cards.length, 'cards');
+            console.log('Card colors:', cards.map(c => c.color));
+            
             return cards;
         }
 
@@ -799,8 +1094,8 @@
                 container.appendChild(playerDiv);
             });
 
-            // إضافة زر الانضمام إذا لم يكن اللاعب في فريق أو كان هناك مكان
-            if ((!currentPlayer.team || (gameState.allowTeamChange !== false)) && players.length < 4) {
+            // إضافة زر الانضمام فقط إذا لم يكن اللاعب في أي فريق وكان التغيير مسموح
+            if (!currentPlayer.team && (gameState.allowTeamChange !== false) && players.length < 4) {
                 const joinBtn = document.createElement('div');
                 joinBtn.className = 'player-item';
                 joinBtn.style.cursor = 'pointer';
@@ -1153,25 +1448,58 @@
 
         // إعادة تشغيل اللعبة
         function resetGame() {
-            if (gameState.creator !== currentPlayer.id) {
-                alert('فقط منشئ الغرفة يمكنه إعادة تشغيل اللعبة');
+            if (!gameState || gameState.creator !== currentPlayer.id) {
+                alert('🚫 فقط منشئ الغرفة يمكنه إعادة تشغيل اللعبة');
                 return;
             }
 
-            const newCards = generateCards();
-            database.ref(`rooms/${roomId}`).update({
-                cards: newCards,
-                currentTeam: 'red',
-                phase: 'hint',
-                hint: null,
-                remainingGuesses: 0,
-                log: [],
-                redScore: 8,
-                blueScore: 8,
-                winner: null
-            });
+            let confirmMsg = `🔄 إعادة تشغيل اللعبة\n\n`;
+            confirmMsg += `هل أنت متأكد من إعادة تشغيل اللعبة؟\n\n`;
+            confirmMsg += `✅ سيتم الاحتفاظ بـ:\n`;
+            confirmMsg += `• جميع اللاعبين وفرقهم\n`;
+            confirmMsg += `• إعدادات الروم\n\n`;
+            confirmMsg += `🔄 سيتم إعادة تعيين:\n`;
+            confirmMsg += `• البطاقات (كلمات جديدة)\n`;
+            confirmMsg += `• النقاط\n`;
+            confirmMsg += `• سجل الأحداث\n`;
+            confirmMsg += `• حالة اللعبة`;
 
-            addToLog('تم إعادة تشغيل اللعبة');
+            if (!confirm(confirmMsg)) {
+                return;
+            }
+
+            try {
+                console.log('🔄 بدء إعادة تشغيل اللعبة...');
+                
+                const newCards = generateCards();
+                console.log('✅ تم إنشاء بطاقات جديدة');
+                
+                // الاحتفاظ باللاعبين والإعدادات الحالية
+                const resetData = {
+                    cards: newCards,
+                    currentTeam: 'red',
+                    phase: 'waiting', // البدء بمرحلة الانتظار
+                    hint: null,
+                    remainingGuesses: 0,
+                    log: {},
+                    redScore: 8,
+                    blueScore: 7,
+                    winner: null
+                    // لا نغير players أو creator أو allowTeamChange
+                };
+
+                database.ref(`rooms/${roomId}`).update(resetData).then(() => {
+                    console.log('✅ تم إعادة تشغيل اللعبة بنجاح');
+                    addToLog(`🔄 ${currentPlayer.name} أعاد تشغيل اللعبة - بطاقات جديدة!`);
+                    alert('✅ تم إعادة تشغيل اللعبة بنجاح!\n\nيمكن للفرق البدء باللعب الآن.');
+                }).catch((error) => {
+                    console.error('❌ خطأ في إعادة تشغيل اللعبة:', error);
+                    alert('❌ حدث خطأ في إعادة تشغيل اللعبة: ' + error.message);
+                });
+            } catch (error) {
+                console.error('❌ خطأ في إنشاء البطاقات الجديدة:', error);
+                alert('❌ حدث خطأ في إنشاء البطاقات الجديدة: ' + error.message);
+            }
         }
 
         // طرد لاعب
@@ -1186,26 +1514,63 @@
 
         // تغيير اسم اللاعب أو فريقه
         function changePlayerName() {
-            let options = `1. تغيير الاسم\n`;
-            if (gameState.allowTeamChange !== false) {
-                options += `2. تغيير الفريق\n`;
+            if (!gameState || !currentPlayer) {
+                alert('اللعبة غير جاهزة بعد');
+                return;
             }
+
+            let options = `📝 خيارات اللاعب:\n\n`;
+            options += `1️⃣ تغيير الاسم\n`;
+            
+            if (gameState.allowTeamChange !== false && currentPlayer.team) {
+                options += `2️⃣ تغيير الفريق\n`;
+            }
+            
             if (gameState.creator === currentPlayer.id) {
-                options += `3. ${gameState.allowTeamChange !== false ? 'منع' : 'السماح بـ'} تغيير الفرق\n`;
+                options += `3️⃣ ${gameState.allowTeamChange !== false ? 'منع' : 'السماح بـ'} تغيير الفرق\n`;
             }
-            options += `اختر رقم الخيار:`;
+            
+            options += `4️⃣ الخروج من الروم\n\n`;
+            options += `اختر رقم الخيار (1-4):`;
 
             const choice = prompt(options);
             
             if (choice === '1') {
+                // تغيير الاسم
                 const newName = prompt('أدخل الاسم الجديد:', currentPlayer.name);
                 if (newName && newName.trim() && newName.trim() !== currentPlayer.name) {
+                    if (newName.trim().length > 20) {
+                        alert('الاسم طويل جداً (الحد الأقصى 20 حرف)');
+                        return;
+                    }
+                    
+                    const oldName = currentPlayer.name;
                     currentPlayer.name = newName.trim();
-                    database.ref(`rooms/${roomId}/players/${currentPlayer.id}/name`).set(currentPlayer.name);
-                    document.getElementById('currentPlayerName').textContent = currentPlayer.name;
+                    
+                    // حفظ الاسم الجديد
+                    localStorage.setItem('playerName', currentPlayer.name);
+                    
+                    database.ref(`rooms/${roomId}/players/${currentPlayer.id}/name`).set(currentPlayer.name).then(() => {
+                        document.getElementById('currentPlayerName').textContent = currentPlayer.name;
+                        addToLog(`${oldName} غير اسمه إلى ${currentPlayer.name}`);
+                        alert('تم تغيير الاسم بنجاح!');
+                    }).catch((error) => {
+                        console.error('Error changing name:', error);
+                        alert('حدث خطأ في تغيير الاسم');
+                        currentPlayer.name = oldName;
+                        localStorage.setItem('playerName', oldName);
+                    });
                 }
-            } else if (choice === '2' && gameState.allowTeamChange !== false) {
-                const teamOptions = `1. الفريق الأحمر - لاعب\n2. الفريق الأحمر - سباي\n3. الفريق الأزرق - لاعب\n4. الفريق الأزرق - سباي\n5. بدون فريق\nاختر رقم الخيار:`;
+            } else if (choice === '2' && gameState.allowTeamChange !== false && currentPlayer.team) {
+                // تغيير الفريق
+                let teamOptions = `🔄 تغيير الفريق:\n\n`;
+                teamOptions += `1️⃣ الفريق الأحمر - لاعب\n`;
+                teamOptions += `2️⃣ الفريق الأحمر - سباي\n`;
+                teamOptions += `3️⃣ الفريق الأزرق - لاعب\n`;
+                teamOptions += `4️⃣ الفريق الأزرق - سباي\n`;
+                teamOptions += `5️⃣ ترك الفريق\n\n`;
+                teamOptions += `اختر رقم الخيار (1-5):`;
+                
                 const teamChoice = prompt(teamOptions);
                 
                 switch(teamChoice) {
@@ -1224,36 +1589,254 @@
                     case '5':
                         leaveTeam();
                         break;
+                    default:
+                        if (teamChoice !== null && teamChoice !== '') {
+                            alert('خيار غير صحيح');
+                        }
+                        break;
                 }
             } else if (choice === '3' && gameState.creator === currentPlayer.id) {
-                const newSetting = !gameState.allowTeamChange;
-                database.ref(`rooms/${roomId}/allowTeamChange`).set(newSetting);
-                alert(newSetting ? 'تم السماح بتغيير الفرق' : 'تم منع تغيير الفرق');
+                // تغيير إعدادات الفرق
+                const currentSetting = gameState.allowTeamChange !== false;
+                const newSetting = !currentSetting;
+                
+                const confirmMsg = newSetting ? 
+                    'هل تريد السماح للاعبين بتغيير فرقهم؟' : 
+                    'هل تريد منع اللاعبين من تغيير فرقهم؟';
+                
+                if (confirm(confirmMsg)) {
+                    database.ref(`rooms/${roomId}/allowTeamChange`).set(newSetting).then(() => {
+                        const resultMsg = newSetting ? 
+                            'تم السماح بتغيير الفرق' : 
+                            'تم منع تغيير الفرق';
+                        alert(resultMsg);
+                        addToLog(`منشئ الروم ${newSetting ? 'سمح بـ' : 'منع'} تغيير الفرق`);
+                    }).catch((error) => {
+                        console.error('Error changing team setting:', error);
+                        alert('حدث خطأ في تغيير الإعداد');
+                    });
+                }
+            } else if (choice === '4') {
+                // الخروج من الروم
+                leaveRoom();
+            } else if (choice !== null && choice !== '') {
+                alert('خيار غير صحيح، يرجى اختيار رقم من 1 إلى 4');
             }
         }
 
         // ترك الفريق
         function leaveTeam() {
-            if (currentPlayer.team) {
-                addToLog(`${currentPlayer.name} ترك الفريق ${currentPlayer.team === 'red' ? 'الأحمر' : 'الأزرق'}`);
-                currentPlayer.team = null;
-                currentPlayer.role = 'player';
-                
-                database.ref(`rooms/${roomId}/players/${currentPlayer.id}`).update({
-                    team: null,
-                    role: 'player'
+            if (!currentPlayer.team) {
+                alert('أنت لست في أي فريق');
+                return;
+            }
+
+            if (!confirm(`هل أنت متأكد من ترك الفريق ${currentPlayer.team === 'red' ? 'الأحمر' : 'الأزرق'}؟`)) {
+                return;
+            }
+
+            const oldTeam = currentPlayer.team;
+            addToLog(`${currentPlayer.name} ترك الفريق ${oldTeam === 'red' ? 'الأحمر' : 'الأزرق'}`);
+            
+            currentPlayer.team = null;
+            currentPlayer.role = 'player';
+            
+            database.ref(`rooms/${roomId}/players/${currentPlayer.id}`).update({
+                team: null,
+                role: 'player'
+            }).then(() => {
+                console.log('Successfully left team');
+            }).catch((error) => {
+                console.error('Error leaving team:', error);
+                alert('حدث خطأ في ترك الفريق');
+                // إعادة تعيين القيم في حالة الخطأ
+                currentPlayer.team = oldTeam;
+                currentPlayer.role = currentPlayer.role;
+            });
+        }
+
+        // الخروج من الروم
+        function leaveRoom() {
+            if (!confirm('هل أنت متأكد من الخروج من الروم؟ ستحتاج إلى الرابط للعودة مرة أخرى.')) {
+                return;
+            }
+
+            try {
+                // إزالة اللاعب من قاعدة البيانات
+                if (database && roomId && currentPlayer) {
+                    addToLog(`${currentPlayer.name} غادر الروم`);
+                    database.ref(`rooms/${roomId}/players/${currentPlayer.id}`).remove().then(() => {
+                        console.log('Player removed from room');
+                    }).catch((error) => {
+                        console.error('Error removing player:', error);
+                    });
+                }
+
+                // إعادة تعيين المتغيرات
+                currentPlayer = null;
+                roomId = null;
+                gameState = null;
+
+                // إزالة معرف الروم من الرابط
+                window.history.replaceState({}, '', window.location.pathname);
+
+                // العودة لشاشة البداية
+                document.getElementById('gameScreen').style.display = 'none';
+                document.getElementById('startScreen').style.display = 'flex';
+                document.getElementById('playerName').value = '';
+
+                alert('تم الخروج من الروم بنجاح');
+            } catch (error) {
+                console.error('Error leaving room:', error);
+                alert('حدث خطأ أثناء الخروج من الروم');
+            }
+        }
+
+        // عرض إدارة اللاعبين
+        function showPlayersManagement() {
+            if (!gameState || !gameState.players) {
+                alert('لا توجد بيانات لاعبين متاحة');
+                return;
+            }
+
+            const players = Object.values(gameState.players);
+            const isCreator = gameState.creator === currentPlayer.id;
+
+            let message = `👥 إدارة اللاعبين (${players.length} لاعب)\n`;
+            message += `🏠 رقم الروم: ${roomId}\n\n`;
+            
+            // تجميع اللاعبين حسب الفريق
+            const redTeam = players.filter(p => p.team === 'red');
+            const blueTeam = players.filter(p => p.team === 'blue');
+            const noTeam = players.filter(p => !p.team);
+            
+            // عرض الفريق الأحمر
+            if (redTeam.length > 0) {
+                message += `🔴 الفريق الأحمر (${redTeam.length}):\n`;
+                redTeam.forEach((player, index) => {
+                    const status = player.online ? '🟢' : '🔴';
+                    const role = player.role === 'spy' ? '🕵️ سباي' : '👤 لاعب';
+                    const creator = player.id === gameState.creator ? ' 👑' : '';
+                    message += `   ${status} ${role} ${player.name}${creator}\n`;
                 });
+                message += `\n`;
+            }
+            
+            // عرض الفريق الأزرق
+            if (blueTeam.length > 0) {
+                message += `🔵 الفريق الأزرق (${blueTeam.length}):\n`;
+                blueTeam.forEach((player, index) => {
+                    const status = player.online ? '🟢' : '🔴';
+                    const role = player.role === 'spy' ? '🕵️ سباي' : '👤 لاعب';
+                    const creator = player.id === gameState.creator ? ' 👑' : '';
+                    message += `   ${status} ${role} ${player.name}${creator}\n`;
+                });
+                message += `\n`;
+            }
+            
+            // عرض اللاعبين بدون فريق
+            if (noTeam.length > 0) {
+                message += `⚪ بدون فريق (${noTeam.length}):\n`;
+                noTeam.forEach((player, index) => {
+                    const status = player.online ? '🟢' : '🔴';
+                    const creator = player.id === gameState.creator ? ' 👑' : '';
+                    message += `   ${status} 👤 ${player.name}${creator}\n`;
+                });
+                message += `\n`;
+            }
+
+            // معلومات إضافية للمنشئ
+            if (isCreator) {
+                message += `👑 صلاحيات منشئ الروم:\n`;
+                message += `• طرد اللاعبين (من قوائم الفرق)\n`;
+                message += `• إعادة تشغيل اللعبة\n`;
+                message += `• التحكم في إعدادات تغيير الفرق\n`;
+                message += `• إدارة اللعبة\n\n`;
+            } else {
+                const creatorName = gameState.players[gameState.creator]?.name || 'غير معروف';
+                message += `👑 منشئ الروم: ${creatorName}\n\n`;
+            }
+
+            // إعدادات الروم
+            message += `⚙️ إعدادات الروم:\n`;
+            message += `• تغيير الفرق: ${gameState.allowTeamChange !== false ? '✅ مسموح' : '❌ ممنوع'}\n`;
+            message += `• حالة اللعبة: ${getGamePhaseText()}\n\n`;
+
+            message += `🔗 رابط الروم:\nhttps://mayadinq8.github.io/marabit/?room=${roomId}`;
+
+            alert(message);
+        }
+        
+        // الحصول على نص مرحلة اللعبة
+        function getGamePhaseText() {
+            if (!gameState) return 'غير معروف';
+            
+            if (gameState.winner) {
+                return `انتهت - فاز الفريق ${gameState.winner === 'red' ? 'الأحمر' : 'الأزرق'}`;
+            }
+            
+            switch (gameState.phase) {
+                case 'waiting':
+                    return 'في انتظار اللاعبين';
+                case 'hint':
+                    return `دور ${gameState.currentTeam === 'red' ? 'الأحمر' : 'الأزرق'} - كتابة التلميح`;
+                case 'guessing':
+                    return `دور ${gameState.currentTeam === 'red' ? 'الأحمر' : 'الأزرق'} - التخمين`;
+                default:
+                    return 'غير معروف';
             }
         }
 
         // نسخ رابط الغرفة
         function copyRoomLink() {
+            if (!roomId) {
+                alert('لا يوجد رابط غرفة متاح');
+                return;
+            }
+
             const link = `https://mayadinq8.github.io/marabit/?room=${roomId}`;
-            navigator.clipboard.writeText(link).then(() => {
+            
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(link).then(() => {
+                    // تغيير نص الزر مؤقتاً للتأكيد
+                    const btn = event.target;
+                    const originalText = btn.textContent;
+                    btn.textContent = 'تم النسخ!';
+                    btn.style.background = '#28a745';
+                    
+                    setTimeout(() => {
+                        btn.textContent = originalText;
+                        btn.style.background = '';
+                    }, 2000);
+                }).catch((error) => {
+                    console.error('Clipboard error:', error);
+                    fallbackCopyMethod(link);
+                });
+            } else {
+                fallbackCopyMethod(link);
+            }
+        }
+
+        // طريقة بديلة لنسخ الرابط
+        function fallbackCopyMethod(link) {
+            const textArea = document.createElement('textarea');
+            textArea.value = link;
+            textArea.style.position = 'fixed';
+            textArea.style.left = '-999999px';
+            textArea.style.top = '-999999px';
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            
+            try {
+                document.execCommand('copy');
                 alert('تم نسخ الرابط!');
-            }).catch(() => {
-                prompt('انسخ هذا الرابط:', link);
-            });
+            } catch (error) {
+                console.error('Copy failed:', error);
+                prompt('انسخ هذا الرابط يدوياً:', link);
+            } finally {
+                document.body.removeChild(textArea);
+            }
         }
 
         // التحقق من وجود معرف غرفة في الرابط عند تحميل الصفحة
@@ -1261,8 +1844,49 @@
             const roomFromUrl = getRoomIdFromUrl();
             if (roomFromUrl) {
                 roomId = roomFromUrl;
+                // إذا كان هناك رابط غرفة، لا نعرض شاشة البداية
+                document.getElementById('startScreen').style.display = 'none';
+                document.getElementById('gameScreen').style.display = 'flex';
+                
+                // محاولة الاتصال التلقائي
+                if (isFirebaseReady && database) {
+                    // إذا كان Firebase جاهز، نحاول الانضمام مباشرة
+                    const savedName = localStorage.getItem('playerName');
+                    if (savedName) {
+                        document.getElementById('playerName').value = savedName;
+                        // إنشاء لاعب مؤقت للانضمام
+                        currentPlayer = {
+                            id: generateId(),
+                            name: savedName,
+                            online: true,
+                            team: null,
+                            role: 'player'
+                        };
+                        document.getElementById('currentPlayerName').textContent = currentPlayer.name;
+                        joinRoom();
+                    } else {
+                        // إذا لم يكن هناك اسم محفوظ، نعرض نافذة لإدخال الاسم
+                        const name = prompt('أدخل اسمك للانضمام للغرفة:');
+                        if (name && name.trim()) {
+                            localStorage.setItem('playerName', name.trim());
+                            currentPlayer = {
+                                id: generateId(),
+                                name: name.trim(),
+                                online: true,
+                                team: null,
+                                role: 'player'
+                            };
+                            document.getElementById('currentPlayerName').textContent = currentPlayer.name;
+                            joinRoom();
+                        } else {
+                            // إذا لم يدخل اسم، نعود لشاشة البداية
+                            document.getElementById('startScreen').style.display = 'flex';
+                            document.getElementById('gameScreen').style.display = 'none';
+                        }
+                    }
+                }
             }
         });
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98c1b2e3c3705cea',t:'MTc2MDA1Mjk3Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98c1e133a3925cea',t:'MTc2MDA1NDg2OS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
