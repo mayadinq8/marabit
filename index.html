@@ -15,21 +15,27 @@
             box-sizing: border-box;
         }
         
-        body {
-    /* 1. الألوان الأصلية التي أرسلتها أنت */
+        /* الجسم يبقى طبيعي حتى لا تتغير الألوان */
+body {
     font-family: 'Tajawal', sans-serif;
     background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    min-height: 100vh;
     color: #fff;
-
-    /* 2. التعديلات الوظيفية لمنع السكرول (قفل الشاشة) */
-    height: 100vh;         /* تثبيت الارتفاع لمنع التمدد */
-    width: 100vw;          /* تثبيت العرض */
-    overflow: hidden;      /* منع التمرير نهائياً */
-    position: fixed;       /* منع الارتداد عند السحب في الآيفون */
     margin: 0;
     padding: 0;
-    touch-action: none;    /* تعطيل حركات السحب الافتراضية للمتصفح */
+    overflow-x: hidden;
 }
+
+/* حاوية التطبيق هي التي تتحكم بالتمرير */
+#app {
+    height: 100vh;
+    width: 100vw;
+    overflow: hidden;
+    position: fixed;
+    inset: 0;
+    touch-action: none;
+}
+
         
         /* Main Screen */
         .main-screen {
