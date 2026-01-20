@@ -9,6 +9,12 @@
   <script src="/_sdk/element_sdk.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&amp;display=swap" rel="stylesheet">
   <style>
+
+    html, body {
+    height: 100%;
+    overflow: hidden;
+}
+
         * {
             margin: 0;
             padding: 0;
@@ -26,17 +32,19 @@ body {
     overflow-x: hidden;
 }
 
+body {
+    overscroll-behavior: none;
+}
+
+
 /* حاوية التطبيق هي التي تتحكم بالتمرير */
 #app {
-    /* 2. التعديلات الوظيفية لمنع السكرول (قفل الشاشة) */
-    height: 100vh;         /* تثبيت الارتفاع لمنع التمدد */
-    width: 100vw;          /* تثبيت العرض */
-    overflow: hidden;      /* منع التمرير نهائياً */
-    position: fixed;       /* منع الارتداد عند السحب في الآيفون */
-    margin: 0;
-    padding: 0;
-    touch-action: none;    /* تعطيل حركات السحب الافتراضية للمتصفح */
+    position: fixed;
+    inset: 0;
+    overflow: hidden;
+    touch-action: none;
 }
+
 
         
         /* Main Screen */
@@ -47,8 +55,8 @@ body {
     justify-content: center;
     
     /* التعديل: تحويل min-height إلى height ثابتة */
-    height: 100vh; 
-    max-height: 100vh;
+    height: 100%; 
+    max-height: 100%;
     width: 100%;
     
     overflow: hidden; /* منع أي عنصر داخلي من محاولة التمرير */
@@ -152,8 +160,8 @@ body {
     flex-direction: column;
     
     /* التأكد من الارتفاع الثابت */
-    height: 100vh; 
-    max-height: 100vh;
+    height: 100%; 
+    max-height: 100%;
     width: 100%;
     
     overflow: hidden; /* هذا يضمن بقاء المحتوى داخل حدود الشاشة */
@@ -1721,12 +1729,15 @@ div.onclick = (e) => {
     </script>
  <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9c11362d92fc51c2',t:'MTc2ODkzOTc4OC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
  
-  <script>
-    window.addEventListener('load', () => {
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
         window.scrollTo(0, 0);
+        document.body.scrollTop = 0;
+        document.documentElement.scrollTop = 0;
     });
 </script>
+
+
  
  </body>
 </html>
-
