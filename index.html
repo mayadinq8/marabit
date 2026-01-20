@@ -16,12 +16,18 @@
         }
         
         body {
-            font-family: 'Tajawal', sans-serif;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-            min-height: 100vh;
-            color: #fff;
-            overflow-x: hidden;
-        }
+    font-family: 'Tajawal', sans-serif;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    
+    /* التعديلات الجديدة لمنع السكرول */
+    margin: 0;
+    padding: 0;
+    height: 100vh;      /* تثبيت الارتفاع على كامل حجم الشاشة */
+    width: 100vw;       /* تثبيت العرض على كامل حجم الشاشة */
+    overflow: hidden;   /* منع ظهور أشرطة التمرير نهائياً */
+    position: fixed;    /* منع "الارتداد" عند السحب في هواتف iPhone */
+    color: #fff;
+}
         
         /* Main Screen */
         .main-screen {
