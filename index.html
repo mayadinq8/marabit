@@ -124,22 +124,6 @@
             border-color: rgba(255,255,255,0.3);
         }
         
-        .or-divider {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            color: #666;
-            margin: 10px 0;
-        }
-        
-        .or-divider::before,
-        .or-divider::after {
-            content: '';
-            flex: 1;
-            height: 1px;
-            background: rgba(255,255,255,0.1);
-        }
-        
         /* Game Screen */
         .game-screen {
             display: none;
@@ -159,7 +143,6 @@
             border-bottom: 1px solid rgba(255,255,255,0.1);
             flex-shrink: 0;
             gap: 8px;
-            flex-wrap: wrap;
         }
         
         .top-bar-section {
@@ -312,15 +295,47 @@
             padding: 6px;
             min-width: 0;
             overflow: hidden;
+            gap: 6px;
+        }
+        
+        /* Start Game Button */
+        .start-game-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+        }
+        
+        .start-game-btn {
+            padding: 20px 40px;
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            border: none;
+            border-radius: 16px;
+            color: #fff;
+            font-size: 1.5rem;
+            font-weight: 800;
+            font-family: 'Tajawal', sans-serif;
+            cursor: pointer;
+            box-shadow: 0 8px 25px rgba(34, 197, 94, 0.4);
+            transition: all 0.3s ease;
+        }
+        
+        .start-game-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 30px rgba(34, 197, 94, 0.5);
         }
         
         /* Cards Grid */
         .cards-grid {
-            display: grid;
+            display: none;
             grid-template-columns: repeat(5, 1fr);
             gap: 4px;
-            flex: 1;
-            min-height: 0;
+            aspect-ratio: 5/5;
+            width: 100%;
+        }
+        
+        .cards-grid.active {
+            display: grid;
         }
         
         .card {
@@ -358,6 +373,7 @@
             padding: 2px;
             word-break: break-word;
             line-height: 1.2;
+            z-index: 1;
         }
         
         .card.revealed .card-word {
@@ -408,6 +424,7 @@
             flex-wrap: wrap;
             gap: 2px;
             justify-content: center;
+            z-index: 2;
         }
         
         .voter-name {
@@ -420,49 +437,61 @@
         .voter-name.red { background: rgba(239, 68, 68, 0.8); }
         .voter-name.blue { background: rgba(59, 130, 246, 0.8); }
         
-        /* Activity Log */
-        .activity-log {
-            background: rgba(255,255,255,0.05);
-            border-radius: 8px;
-            margin-top: 6px;
-            padding: 6px;
-            height: 80px;
-            overflow-y: auto;
-            flex-shrink: 0;
+        /* Winner Display */
+        .winner-display {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+            text-align: center;
         }
         
-        .activity-title {
-            font-size: 0.7rem;
-            color: #888;
-            margin-bottom: 4px;
+        .winner-display.active {
+            display: flex;
         }
         
-        .activity-item {
-            font-size: 0.65rem;
-            padding: 3px 6px;
-            background: rgba(255,255,255,0.05);
-            border-radius: 4px;
-            margin-bottom: 2px;
-            color: #ccc;
+        .winner-content-inline {
+            animation: winnerPop 0.5s ease;
         }
         
-        .activity-item.red { border-right: 2px solid #ef4444; }
-        .activity-item.blue { border-right: 2px solid #3b82f6; }
-        .activity-item.winner { background: linear-gradient(90deg, rgba(34, 197, 94, 0.2), transparent); color: #4ade80; font-weight: 700; }
+        @keyframes winnerPop {
+            0% { transform: scale(0.5); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
         
-        /* Hint Input */
-        .hint-section {
+        .winner-emoji-inline {
+            font-size: 4rem;
+            margin-bottom: 20px;
+        }
+        
+        .winner-text-inline {
+            font-size: 2rem;
+            font-weight: 800;
+        }
+        
+        .winner-text-inline.red { color: #ef4444; }
+        .winner-text-inline.blue { color: #3b82f6; }
+        
+        /* Hint Box */
+        .hint-box {
             background: rgba(0,0,0,0.3);
-            padding: 8px;
+            border: 2px solid rgba(255,255,255,0.1);
             border-radius: 8px;
-            margin-top: 6px;
-            flex-shrink: 0;
+            padding: 10px;
+            min-height: 100px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
         }
         
         .hint-input-row {
-            display: flex;
+            display: none;
             gap: 6px;
             align-items: center;
+        }
+        
+        .hint-input-row.active {
+            display: flex;
         }
         
         .hint-input {
@@ -503,11 +532,15 @@
         }
         
         .current-hint {
+            display: none;
             text-align: center;
             padding: 8px;
             background: rgba(255,255,255,0.1);
             border-radius: 8px;
-            margin-top: 6px;
+        }
+        
+        .current-hint.active {
+            display: block;
         }
         
         .hint-text {
@@ -519,10 +552,11 @@
         .hint-count {
             font-size: 0.8rem;
             color: #888;
+            margin-top: 4px;
         }
         
         .end-turn-btn {
-            margin-top: 6px;
+            display: none;
             width: 100%;
             padding: 8px;
             background: rgba(255,255,255,0.1);
@@ -534,9 +568,42 @@
             cursor: pointer;
         }
         
+        .end-turn-btn.active {
+            display: block;
+        }
+        
         .end-turn-btn:hover {
             background: rgba(255,255,255,0.15);
         }
+        
+        /* Activity Log */
+        .activity-log {
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+            padding: 6px;
+            height: 140px;
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+        
+        .activity-title {
+            font-size: 0.7rem;
+            color: #888;
+            margin-bottom: 4px;
+        }
+        
+        .activity-item {
+            font-size: 0.65rem;
+            padding: 3px 6px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 4px;
+            margin-bottom: 2px;
+            color: #ccc;
+        }
+        
+        .activity-item.red { border-right: 2px solid #ef4444; }
+        .activity-item.blue { border-right: 2px solid #3b82f6; }
+        .activity-item.winner { background: linear-gradient(90deg, rgba(34, 197, 94, 0.2), transparent); color: #4ade80; font-weight: 700; }
         
         /* Modal */
         .modal-overlay {
@@ -617,54 +684,6 @@
             cursor: pointer;
         }
         
-        /* Winner Overlay */
-        .winner-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0,0,0,0.9);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 2000;
-        }
-        
-        .winner-overlay.active {
-            display: flex;
-        }
-        
-        .winner-content {
-            text-align: center;
-            animation: winnerPop 0.5s ease;
-        }
-        
-        @keyframes winnerPop {
-            0% { transform: scale(0.5); opacity: 0; }
-            100% { transform: scale(1); opacity: 1; }
-        }
-        
-        .winner-emoji {
-            font-size: 5rem;
-            margin-bottom: 20px;
-        }
-        
-        .winner-text {
-            font-size: 2.5rem;
-            font-weight: 800;
-            margin-bottom: 10px;
-        }
-        
-        .winner-text.red { color: #ef4444; }
-        .winner-text.blue { color: #3b82f6; }
-        
-        .winner-reason {
-            font-size: 1rem;
-            color: #888;
-            margin-bottom: 30px;
-        }
-        
         /* Toast */
         .toast {
             position: fixed;
@@ -718,12 +737,16 @@
             }
             
             .activity-log {
-                height: 60px;
+                height: 120px;
             }
             
             .top-btn {
                 padding: 4px 8px;
                 font-size: 0.7rem;
+            }
+            
+            .hint-box {
+                min-height: 90px;
             }
         }
     </style>
@@ -738,9 +761,6 @@
    </div>
    <p class="subtitle">لعبة الكلمات والتخمين الجماعية</p>
    <div class="input-container"><input type="text" class="input-field" id="playerName" placeholder="أدخل اسمك" maxlength="15"> <button class="btn btn-primary" id="createGameBtn">🎮 إنشاء غرفة جديدة</button>
-    <div class="or-divider">
-     أو
-    </div><input type="text" class="input-field" id="roomCodeInput" placeholder="أدخل كود الغرفة"> <button class="btn btn-secondary" id="joinGameBtn">🚪 انضمام للغرفة</button>
    </div>
   </div><!-- Game Screen -->
   <div class="game-screen" id="gameScreen"><!-- Top Bar -->
@@ -750,7 +770,9 @@
       👥 <span>0</span>
      </div><button class="top-btn top-btn-icon" id="resetGameBtn" style="display:none;">🔄 إعادة</button>
     </div>
-    <div class="top-bar-section"><button class="top-btn top-btn-icon" id="playerNameBtn">👤 <span id="currentPlayerName"></span></button> <button class="top-btn top-btn-icon" onclick="copyRoomLink()">🔗 نسخ الرابط</button>
+    <div class="top-bar-section" style="flex:1; justify-content:center;"><button class="top-btn top-btn-icon" id="playerNameBtn">👤 <span id="currentPlayerName"></span></button>
+    </div>
+    <div class="top-bar-section"><button class="top-btn top-btn-icon" onclick="copyRoomLink()">🔗 نسخ الرابط</button>
     </div>
    </div><!-- Turn Indicator -->
    <div class="turn-indicator" id="turnIndicator">
@@ -779,23 +801,33 @@
       <div id="redPlayersList"></div><button class="join-team-btn" onclick="joinTeam('red', 'player')">+ لاعب</button>
      </div>
     </div><!-- Center Area -->
-    <div class="center-area">
-     <div class="cards-grid" id="cardsGrid"></div><!-- Activity Log -->
+    <div class="center-area"><!-- Start Game Button -->
+     <div class="start-game-container" id="startGameContainer"><button class="start-game-btn" id="startGameBtn" onclick="startGameNow()">▶️ بدء اللعب</button>
+     </div><!-- Cards Grid -->
+     <div class="cards-grid" id="cardsGrid"></div><!-- Winner Display -->
+     <div class="winner-display" id="winnerDisplay">
+      <div class="winner-content-inline">
+       <div class="winner-emoji-inline">
+        🏆
+       </div>
+       <div class="winner-text-inline" id="winnerTextInline"></div>
+      </div>
+     </div><!-- Hint Box -->
+     <div class="hint-box">
+      <div class="hint-input-row" id="hintInputRow"><input type="text" class="hint-input" id="hintInput" placeholder="أدخل التلميح..."> <select class="hint-count-select" id="hintCountSelect"> <option value="1">1</option> <option value="2">2</option> <option value="3">3</option> <option value="4">4</option> <option value="5">5</option> <option value="6">6</option> <option value="7">7</option> <option value="8">8</option> <option value="9">9</option> </select> <button class="send-hint-btn" onclick="sendHint()">إرسال</button>
+      </div>
+      <div class="current-hint" id="currentHintDisplay">
+       <div class="hint-text" id="hintText"></div>
+       <div class="hint-count">
+        المتبقي: <span id="remainingGuesses">0</span>
+       </div>
+      </div><button class="end-turn-btn" id="endTurnBtn" onclick="endTurn()">⏭️ إنهاء الدور</button>
+     </div><!-- Activity Log -->
      <div class="activity-log">
       <div class="activity-title">
        📋 سجل الأحداث
       </div>
       <div id="activityList"></div>
-     </div><!-- Hint Section -->
-     <div class="hint-section" id="hintSection" style="display:none;">
-      <div class="hint-input-row" id="hintInputRow" style="display:none;"><input type="text" class="hint-input" id="hintInput" placeholder="أدخل التلميح..."> <select class="hint-count-select" id="hintCountSelect"> <option value="1">1</option> <option value="2">2</option> <option value="3">3</option> <option value="4">4</option> <option value="5">5</option> <option value="6">6</option> <option value="7">7</option> <option value="8">8</option> </select> <button class="send-hint-btn" onclick="sendHint()">إرسال</button>
-      </div>
-      <div class="current-hint" id="currentHintDisplay" style="display:none;">
-       <div class="hint-text" id="hintText"></div>
-       <div class="hint-count">
-        المتبقي: <span id="remainingGuesses">0</span>
-       </div>
-      </div><button class="end-turn-btn" id="endTurnBtn" style="display:none;" onclick="endTurn()">⏭️ إنهاء الدور</button>
      </div>
     </div><!-- Blue Team Panel -->
     <div class="team-panel blue">
@@ -843,15 +875,6 @@
     </div>
     <div class="modal-buttons"><button class="btn btn-secondary" onclick="closeNameModal()">إلغاء</button> <button class="btn btn-primary" onclick="changeName()">حفظ</button> <button class="btn btn-secondary" onclick="leaveRoom()" style="background:#ef4444;">خروج</button>
     </div>
-   </div>
-  </div><!-- Winner Overlay -->
-  <div class="winner-overlay" id="winnerOverlay">
-   <div class="winner-content">
-    <div class="winner-emoji">
-     🏆
-    </div>
-    <div class="winner-text" id="winnerText"></div>
-    <div class="winner-reason" id="winnerReason"></div><button class="btn btn-primary" onclick="closeWinner()">حسناً</button>
    </div>
   </div><!-- Toast -->
   <div class="toast" id="toast"></div>
@@ -909,8 +932,39 @@
             const urlParams = new URLSearchParams(window.location.search);
             const roomCode = urlParams.get('room');
             if (roomCode) {
-                document.getElementById('roomCodeInput').value = roomCode;
+                // Change button to join room
+                const btn = document.getElementById('createGameBtn');
+                btn.innerHTML = '🎮 الانضمام للغرفة';
+                btn.onclick = () => joinExistingRoom(roomCode);
             }
+        }
+
+        // Join existing room
+        async function joinExistingRoom(roomCode) {
+            const name = document.getElementById('playerName').value.trim();
+
+            if (!name) {
+                showToast('الرجاء إدخال اسمك');
+                return;
+            }
+
+            const snapshot = await db.ref('rooms/' + roomCode).once('value');
+            if (!snapshot.exists()) {
+                showToast('الغرفة غير موجودة');
+                return;
+            }
+
+            playerId = generateId();
+            currentPlayer = { id: playerId, name: name, team: null, role: null, online: true };
+            currentRoom = roomCode;
+
+            const gameData = snapshot.val();
+            isCreator = gameData.creator === playerId;
+
+            await db.ref('rooms/' + roomCode + '/players/' + playerId).set(currentPlayer);
+            
+            setupPresence(roomCode);
+            startGame(roomCode);
         }
 
         // Show toast message
@@ -947,7 +1001,7 @@
                 createdAt: Date.now(),
                 status: 'waiting',
                 currentTurn: startTeam,
-                phase: 'hint', // hint or guess
+                phase: 'hint',
                 cards: shuffledWords.map((word, i) => ({
                     word: word,
                     color: cardColors[i],
@@ -967,39 +1021,6 @@
             };
 
             await db.ref('rooms/' + roomCode).set(gameData);
-            
-            setupPresence(roomCode);
-            startGame(roomCode);
-        });
-
-        // Join existing game
-        document.getElementById('joinGameBtn').addEventListener('click', async () => {
-            const name = document.getElementById('playerName').value.trim();
-            const roomCode = document.getElementById('roomCodeInput').value.trim().toUpperCase();
-
-            if (!name) {
-                showToast('الرجاء إدخال اسمك');
-                return;
-            }
-            if (!roomCode) {
-                showToast('الرجاء إدخال كود الغرفة');
-                return;
-            }
-
-            const snapshot = await db.ref('rooms/' + roomCode).once('value');
-            if (!snapshot.exists()) {
-                showToast('الغرفة غير موجودة');
-                return;
-            }
-
-            playerId = generateId();
-            currentPlayer = { id: playerId, name: name, team: null, role: null, online: true };
-            currentRoom = roomCode;
-
-            const gameData = snapshot.val();
-            isCreator = gameData.creator === playerId;
-
-            await db.ref('rooms/' + roomCode + '/players/' + playerId).set(currentPlayer);
             
             setupPresence(roomCode);
             startGame(roomCode);
@@ -1050,7 +1071,6 @@
             });
 
             // Update URL
-            const baseUrl = 'https://mayadinq8.github.io/marabit/';
             window.history.replaceState({}, '', '?room=' + roomCode);
 
             document.getElementById('currentPlayerName').textContent = currentPlayer.name;
@@ -1059,6 +1079,15 @@
             if (isCreator) {
                 document.getElementById('resetGameBtn').style.display = 'block';
             }
+        }
+
+        // Start game now
+        async function startGameNow() {
+            if (!isCreator) return;
+            
+            await db.ref(`rooms/${currentRoom}`).update({
+                status: 'playing'
+            });
         }
 
         // Update game UI
@@ -1090,19 +1119,25 @@
             // Update team lists
             updateTeamLists(players);
 
-            // Update cards
-            updateCards(data);
+            // Show/hide start button
+            if (isCreator && data.status === 'waiting') {
+                document.getElementById('startGameContainer').style.display = 'flex';
+                document.getElementById('cardsGrid').classList.remove('active');
+                document.getElementById('winnerDisplay').classList.remove('active');
+            } else if (data.status === 'playing' && !data.winner) {
+                document.getElementById('startGameContainer').style.display = 'none';
+                document.getElementById('cardsGrid').classList.add('active');
+                document.getElementById('winnerDisplay').classList.remove('active');
+                updateCards(data);
+            } else if (data.winner) {
+                // Winner state will be handled after revealing cards
+            }
 
             // Update hint section
             updateHintSection(data);
 
             // Update activity log
             updateActivityLog(data.activity || []);
-
-            // Check for winner
-            if (data.winner && !document.getElementById('winnerOverlay').classList.contains('shown')) {
-                showWinner(data.winner, data.winReason);
-            }
 
             // Update creator status
             isCreator = data.creator === playerId;
@@ -1126,7 +1161,7 @@
             }
 
             const teamName = data.currentTurn === 'red' ? 'الفريق الأحمر' : 'الفريق الأزرق';
-            const phaseText = data.phase === 'hint' ? '🕵️ دور الجاسوس' : '👆 دور التخمين';
+            const phaseText = data.phase === 'hint' ? '🕵️ دور الجاسوس' : '👥 دور التخمين';
             indicator.textContent = `${teamName} - ${phaseText}`;
             indicator.className = 'turn-indicator turn-' + data.currentTurn;
         }
@@ -1197,7 +1232,7 @@
                 ).join('');
 
                 div.innerHTML = `
-                    <button class="hand-btn" onclick="confirmVote(${index}, event)">✋</button>
+                    <button class="hand-btn" onclick="confirmVote(${index}, event)">👆</button>
                     <span class="card-word">${card.word}</span>
                     <div class="voters-display">${voterNames}</div>
                 `;
@@ -1263,13 +1298,13 @@
                 result: card.color,
                 time: Date.now()
             });
-            updates['activity'] = activity;
 
+            // Calculate new remaining guesses
             let newRemaining = data.remainingGuesses - 1;
 
-            // Check card color
+            // Check card color and apply game logic
             if (card.color === 'black') {
-                // Game over - other team wins
+                // Black card - instant loss for current team
                 const winner = currentPlayer.team === 'red' ? 'blue' : 'red';
                 updates['winner'] = winner;
                 updates['winReason'] = 'black';
@@ -1280,13 +1315,13 @@
                     time: Date.now()
                 });
             } else if (card.color === currentPlayer.team) {
-                // Correct guess
+                // Correct team card - decrease team score and continue if guesses remain
                 const scoreKey = currentPlayer.team + 'Score';
                 const newScore = data[scoreKey] - 1;
                 updates[scoreKey] = newScore;
 
                 if (newScore === 0) {
-                    // Team wins
+                    // Team completed all words - WIN
                     updates['winner'] = currentPlayer.team;
                     updates['winReason'] = 'complete';
                     activity.push({
@@ -1295,31 +1330,33 @@
                         reason: 'أكمل جميع كلماته',
                         time: Date.now()
                     });
-                } else if (newRemaining <= 0) {
-                    // End turn
+                } else if (newRemaining < 0) {
+                    // No more guesses - end turn
                     updates['currentTurn'] = currentPlayer.team === 'red' ? 'blue' : 'red';
                     updates['phase'] = 'hint';
                     updates['hint'] = null;
                     updates['hintCount'] = 0;
                     updates['remainingGuesses'] = 0;
                 } else {
+                    // Continue guessing
                     updates['remainingGuesses'] = newRemaining;
                 }
             } else if (card.color === 'neutral') {
-                // Neutral - end turn
+                // Neutral card - end turn immediately
                 updates['currentTurn'] = currentPlayer.team === 'red' ? 'blue' : 'red';
                 updates['phase'] = 'hint';
                 updates['hint'] = null;
                 updates['hintCount'] = 0;
                 updates['remainingGuesses'] = 0;
             } else {
-                // Enemy card - give them point and end turn
+                // Enemy team card - give point to enemy and end turn
                 const enemyTeam = currentPlayer.team === 'red' ? 'blue' : 'red';
                 const enemyScoreKey = enemyTeam + 'Score';
                 const newEnemyScore = data[enemyScoreKey] - 1;
                 updates[enemyScoreKey] = newEnemyScore;
 
                 if (newEnemyScore === 0) {
+                    // Enemy wins
                     updates['winner'] = enemyTeam;
                     updates['winReason'] = 'complete';
                     activity.push({
@@ -1329,6 +1366,7 @@
                         time: Date.now()
                     });
                 } else {
+                    // Switch turn to enemy team
                     updates['currentTurn'] = enemyTeam;
                     updates['phase'] = 'hint';
                     updates['hint'] = null;
@@ -1339,42 +1377,67 @@
 
             updates['activity'] = activity;
             await db.ref(`rooms/${currentRoom}`).update(updates);
+
+            // If there's a winner, show cards for 3 seconds then show winner
+            if (updates['winner']) {
+                setTimeout(() => {
+                    showWinnerDisplay(updates['winner']);
+                }, 3000);
+            }
+        }
+
+        // Show winner display
+        function showWinnerDisplay(winner) {
+            document.getElementById('cardsGrid').classList.remove('active');
+            document.getElementById('winnerDisplay').classList.add('active');
+            
+            const winnerText = document.getElementById('winnerTextInline');
+            winnerText.textContent = winner === 'red' ? 'فاز الفريق الأحمر!' : 'فاز الفريق الأزرق!';
+            winnerText.className = 'winner-text-inline ' + winner;
         }
 
         // Update hint section
         function updateHintSection(data) {
-            const hintSection = document.getElementById('hintSection');
             const hintInputRow = document.getElementById('hintInputRow');
             const currentHintDisplay = document.getElementById('currentHintDisplay');
             const endTurnBtn = document.getElementById('endTurnBtn');
 
             if (data.winner || data.status === 'waiting') {
-                hintSection.style.display = 'none';
+                hintInputRow.classList.remove('active');
+                currentHintDisplay.classList.remove('active');
+                endTurnBtn.classList.remove('active');
                 return;
             }
 
-            hintSection.style.display = 'block';
-
-            // Check if current player is spy of current team
+            // Check if current player is spy of current team in hint phase
             const isCurrentSpy = currentPlayer.role === 'spy' && 
                                 currentPlayer.team === data.currentTurn &&
                                 data.phase === 'hint';
 
+            // Check if current player is player of current team in guess phase
             const isCurrentPlayer = currentPlayer.role === 'player' && 
                                    currentPlayer.team === data.currentTurn &&
                                    data.phase === 'guess';
 
-            hintInputRow.style.display = isCurrentSpy ? 'flex' : 'none';
+            if (isCurrentSpy) {
+                hintInputRow.classList.add('active');
+            } else {
+                hintInputRow.classList.remove('active');
+            }
 
             if (data.hint) {
-                currentHintDisplay.style.display = 'block';
+                currentHintDisplay.classList.add('active');
                 document.getElementById('hintText').textContent = data.hint;
                 document.getElementById('remainingGuesses').textContent = data.remainingGuesses;
             } else {
-                currentHintDisplay.style.display = 'none';
+                currentHintDisplay.classList.remove('active');
             }
 
-            endTurnBtn.style.display = isCurrentPlayer ? 'block' : 'none';
+            if (isCurrentPlayer) {
+                endTurnBtn.classList.add('active');
+            } else {
+                endTurnBtn.classList.remove('active');
+            }
         }
 
         // Send hint
@@ -1413,7 +1476,7 @@
             hintInput.value = '';
         }
 
-        // End turn
+        // End turn manually
         async function endTurn() {
             const snapshot = await db.ref(`rooms/${currentRoom}`).once('value');
             const data = snapshot.val();
@@ -1459,7 +1522,7 @@
         // Join team
         async function joinTeam(team, role) {
             if (currentPlayer.team && currentPlayer.team !== team) {
-                // Leave current team first
+                // Can switch teams
             }
 
             await db.ref(`rooms/${currentRoom}/players/${playerId}`).update({
@@ -1517,8 +1580,13 @@
 
         // Name modal
         document.getElementById('playerNameBtn').addEventListener('click', () => {
-            document.getElementById('newNameInput').value = currentPlayer.name;
+            const input = document.getElementById('newNameInput');
+            input.value = currentPlayer.name;
             document.getElementById('nameModal').classList.add('active');
+            setTimeout(() => {
+                input.focus();
+                input.select();
+            }, 100);
         });
 
         function closeNameModal() {
@@ -1536,7 +1604,6 @@
             currentPlayer.name = newName;
             document.getElementById('currentPlayerName').textContent = newName;
             closeNameModal();
-            showToast('تم تغيير الاسم');
         }
 
         // Leave room
@@ -1596,31 +1663,13 @@
                 status: 'waiting'
             });
 
-            document.getElementById('winnerOverlay').classList.remove('active', 'shown');
+            // Reset display
+            document.getElementById('winnerDisplay').classList.remove('active');
+            document.getElementById('cardsGrid').classList.remove('active');
+            document.getElementById('startGameContainer').style.display = 'flex';
+            
             showToast('تم إعادة اللعبة');
         });
-
-        // Show winner
-        function showWinner(winner, reason) {
-            const overlay = document.getElementById('winnerOverlay');
-            const text = document.getElementById('winnerText');
-            const reasonEl = document.getElementById('winnerReason');
-
-            text.textContent = winner === 'red' ? 'فاز الفريق الأحمر!' : 'فاز الفريق الأزرق!';
-            text.className = 'winner-text ' + winner;
-
-            if (reason === 'black') {
-                reasonEl.textContent = 'الفريق الخصم ضغط على البطاقة السوداء';
-            } else {
-                reasonEl.textContent = 'أكمل جميع كلماته بنجاح';
-            }
-
-            overlay.classList.add('active', 'shown');
-        }
-
-        function closeWinner() {
-            document.getElementById('winnerOverlay').classList.remove('active');
-        }
 
         // Initialize
         checkUrlForRoom();
@@ -1640,5 +1689,5 @@
             });
         }
     </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9c0fcc9f75ce51c2',t:'MTc2ODkyNDk3OS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9c11362d92fc51c2',t:'MTc2ODkzOTc4OC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
