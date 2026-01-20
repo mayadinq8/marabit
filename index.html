@@ -472,88 +472,72 @@
         .winner-text-inline.red { color: #ef4444; }
         .winner-text-inline.blue { color: #3b82f6; }
         
-        /* Hint Box */
-        .hint-box {
-            background: rgba(0,0,0,0.3);
-            border: 2px solid rgba(255,255,255,0.1);
-            border-radius: 8px;
-            padding: 10px;
-            min-height: 100px;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-        
-        .hint-input-row {
-            display: none;
-            gap: 6px;
-            align-items: center;
-        }
-        
-        .hint-input-row.active {
-            display: flex;
-        }
-        
-        .hint-input {
-            flex: 1;
-            padding: 8px 12px;
-            border: 2px solid rgba(255,255,255,0.2);
-            border-radius: 8px;
-            background: rgba(255,255,255,0.1);
-            color: #fff;
-            font-size: 0.9rem;
-            font-family: 'Tajawal', sans-serif;
-        }
-        
-        .hint-input:focus {
-            outline: none;
-            border-color: #e94560;
-        }
-        
-        .hint-count-select {
-            padding: 8px;
-            border: 2px solid rgba(255,255,255,0.2);
-            border-radius: 8px;
-            background: rgba(255,255,255,0.1);
-            color: #fff;
-            font-size: 0.9rem;
-            font-family: 'Tajawal', sans-serif;
-        }
-        
-        .send-hint-btn {
-            padding: 8px 16px;
-            background: linear-gradient(135deg, #e94560, #c73e54);
-            border: none;
-            border-radius: 8px;
-            color: #fff;
-            font-weight: 700;
-            font-family: 'Tajawal', sans-serif;
-            cursor: pointer;
-        }
-        
-        .current-hint {
-            display: none;
-            text-align: center;
-            padding: 8px;
-            background: rgba(255,255,255,0.1);
-            border-radius: 8px;
-        }
-        
-        .current-hint.active {
-            display: block;
-        }
-        
-        .hint-text {
-            font-size: 1.1rem;
-            font-weight: 700;
-            color: #fbbf24;
-        }
-        
-        .hint-count {
-            font-size: 0.8rem;
-            color: #888;
-            margin-top: 4px;
-        }
+       /* --- Hint Box المطور --- */
+.hint-box {
+    background: rgba(0,0,0,0.3);
+    border: 2px solid rgba(255,255,255,0.1);
+    border-radius: 12px;
+    padding: 15px;
+    min-height: 110px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.hint-input-row {
+    display: none;
+    gap: 10px;
+}
+
+/* التعديل الجوهري هنا باستخدام Grid */
+.hint-input-row.active {
+    display: grid; 
+    grid-template-columns: 1fr auto; /* المربع يأخذ المساحة والأرقام بجانبه */
+    align-items: center;
+    row-gap: 10px;    /* إضافة مسافة بين المربع والزر */
+    column-gap: 8px;
+}
+
+.hint-input {
+    grid-column: 1 / 2; /* السطر الأول، العمود الأول */
+    padding: 10px 15px;
+    border: 2px solid rgba(255,255,255,0.2);
+    border-radius: 8px;
+    background: rgba(255,255,255,0.1);
+    color: #fff;
+    font-size: 0.95rem;
+    width: 100%;
+}
+
+.hint-count-select {
+    grid-column: 2 / 3; /* السطر الأول، العمود الثاني */
+    padding: 8px;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.15);
+    color: #fff;
+    cursor: pointer;
+}
+
+.send-hint-btn {
+    grid-column: 1 / 3; /* السطر الثاني، يأخذ العرض كاملاً للتموضع */
+    justify-self: start; /* يضع الزر في بداية السطر (اليمين في RTL) */
+    
+    /* حجم أصغر */
+    padding: 6px 20px; 
+    font-size: 0.85rem;
+    
+    background: linear-gradient(135deg, #e94560, #c73e54);
+    border: none;
+    border-radius: 6px;
+    color: #fff;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.send-hint-btn:active {
+    transform: scale(0.95);
+}
         
         .end-turn-btn {
             display: none;
@@ -1102,12 +1086,12 @@
                 currentPlayer = players[playerId];
             }
 
-            // Check if player was kicked
-            if (!players[playerId] && currentRoom) {
-                showToast('تم طردك من الغرفة');
-                leaveRoom();
-                return;
-            }
+            // التحقق من الطرد (تم التعديل لمنع الطرد عند الدخول لأول مرة)
+if (currentRoom && currentPlayer && !players[playerId] && data.status !== 'waiting') {
+    showToast('تم طردك من الغرفة');
+    leaveRoom();
+    return;
+}
 
             // Update scores
             document.getElementById('redScore').textContent = data.redScore;
@@ -1231,17 +1215,20 @@
                     `<span class="voter-name ${v.team}">${v.name}</span>`
                 ).join('');
 
-                div.innerHTML = `
-                    <button class="hand-btn" onclick="confirmVote(${index}, event)">👆</button>
-                    <span class="card-word">${card.word}</span>
-                    <div class="voters-display">${voterNames}</div>
-                `;
+               div.innerHTML = `
+    <button class="hand-btn" onclick="confirmVote(${index}, event)">👆</button>
+    <span class="card-word">${card.word}</span>
+    <div class="voters-display">${voterNames}</div>
+`;
 
-                div.addEventListener('click', (e) => {
-                    if (!e.target.classList.contains('hand-btn')) {
-                        toggleVote(index, data);
-                    }
-                });
+// التعديل هنا: استخدام onclick بدلاً من addEventListener لمنع تداخل العمليات
+div.onclick = (e) => {
+    // إذا كان الضغط على زر اليد، لا تفعل شيئاً هنا (لأن زر اليد له وظيفة منفصلة)
+    if (e.target.classList.contains('hand-btn')) return;
+
+    // إذا كان الضغط على الكرت نفسه، قم بالتصويت (إظهار الاسم)
+    toggleVote(index, data);
+};
 
                 grid.appendChild(div);
             });
@@ -1442,58 +1429,65 @@
 
         // Send hint
         async function sendHint() {
-            const hintInput = document.getElementById('hintInput');
-            const hintCount = document.getElementById('hintCountSelect').value;
-            const hint = hintInput.value.trim();
+    const hintInput = document.getElementById('hintInput');
+    const hintCount = parseInt(document.getElementById('hintCountSelect').value);
+    const hint = hintInput.value.trim();
 
-            if (!hint) {
-                showToast('الرجاء إدخال التلميح');
-                return;
-            }
+    if (!hint) {
+        showToast('الرجاء إدخال التلميح');
+        return;
+    }
 
-            const snapshot = await db.ref(`rooms/${currentRoom}`).once('value');
-            const data = snapshot.val();
+    const snapshot = await db.ref(`rooms/${currentRoom}`).once('value');
+    const data = snapshot.val();
+    const activity = data.activity || [];
 
-            const activity = data.activity || [];
-            activity.push({
-                type: 'hint',
-                team: currentPlayer.team,
-                player: currentPlayer.name,
-                hint: hint,
-                count: hintCount,
-                time: Date.now()
-            });
+    activity.push({
+        type: 'hint',
+        team: currentPlayer.team,
+        player: currentPlayer.name,
+        hint: hint,
+        count: hintCount,
+        time: Date.now()
+    });
 
-            await db.ref(`rooms/${currentRoom}`).update({
-                hint: hint,
-                hintCount: parseInt(hintCount),
-                remainingGuesses: parseInt(hintCount) + 1,
-                phase: 'guess',
-                status: 'playing',
-                activity: activity
-            });
+    // التحديث هنا: تم إزالة الـ +1 لتكون المحاولات مساوية للعدد المختار فقط
+    await db.ref(`rooms/${currentRoom}`).update({
+        hint: hint,
+        hintCount: hintCount,
+        remainingGuesses: hintCount, 
+        phase: 'guess',
+        activity: activity
+    });
 
-            hintInput.value = '';
-        }
+    hintInput.value = '';
+}
 
         // End turn manually
         async function endTurn() {
-            const snapshot = await db.ref(`rooms/${currentRoom}`).once('value');
-            const data = snapshot.val();
+    const snapshot = await db.ref(`rooms/${currentRoom}`).once('value');
+    const data = snapshot.val();
 
-            if (data.currentTurn !== currentPlayer.team) return;
-            if (data.phase !== 'guess') return;
+    if (data.currentTurn !== currentPlayer.team) return;
+    if (data.phase !== 'guess') return;
 
-            const nextTeam = currentPlayer.team === 'red' ? 'blue' : 'red';
+    const nextTeam = currentPlayer.team === 'red' ? 'blue' : 'red';
 
-            await db.ref(`rooms/${currentRoom}`).update({
-                currentTurn: nextTeam,
-                phase: 'hint',
-                hint: null,
-                hintCount: 0,
-                remainingGuesses: 0
-            });
-        }
+    const updates = {
+        currentTurn: nextTeam,
+        phase: 'hint',
+        hint: null,
+        hintCount: 0,
+        remainingGuesses: 0
+    };
+
+    // ميزة إضافية: مسح التصويتات من جميع الكروت عند تبديل الدور
+    data.cards.forEach((_, index) => {
+        updates[`cards/${index}/votes`] = {};
+    });
+
+    await db.ref(`rooms/${currentRoom}`).update(updates);
+}
 
         // Update activity log
         function updateActivityLog(activity) {
@@ -1580,14 +1574,17 @@
 
         // Name modal
         document.getElementById('playerNameBtn').addEventListener('click', () => {
-            const input = document.getElementById('newNameInput');
-            input.value = currentPlayer.name;
-            document.getElementById('nameModal').classList.add('active');
-            setTimeout(() => {
-                input.focus();
-                input.select();
-            }, 100);
-        });
+    const input = document.getElementById('newNameInput');
+    input.value = currentPlayer.name;
+    document.getElementById('nameModal').classList.add('active');
+    
+    // تأخير 350ms يضمن ظهور المودال تماماً مما يجعل الجوال يتقبل فتح الكيبورد
+    setTimeout(() => {
+        input.focus();
+        input.setSelectionRange(input.value.length, input.value.length); 
+        input.click(); // نقرة وهمية لزيادة التأكيد على المتصفح
+    }, 350);
+});
 
         function closeNameModal() {
             document.getElementById('nameModal').classList.remove('active');
