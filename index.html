@@ -18,26 +18,33 @@
         body {
     font-family: 'Tajawal', sans-serif;
     background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-    
-    /* التعديلات الجديدة لمنع السكرول */
+    color: #fff;
+
+    /* التعديلات الأساسية لمنع السكرول */
+    height: 100vh;         /* تثبيت الارتفاع على كامل الشاشة */
+    width: 100vw;          /* تثبيت العرض على كامل الشاشة */
+    overflow: hidden;      /* منع التمرير في كل الاتجاهات */
+    position: fixed;       /* منع "ارتداد" الشاشة عند السحب في الآيفون */
     margin: 0;
     padding: 0;
-    height: 100vh;      /* تثبيت الارتفاع على كامل حجم الشاشة */
-    width: 100vw;       /* تثبيت العرض على كامل حجم الشاشة */
-    overflow: hidden;   /* منع ظهور أشرطة التمرير نهائياً */
-    position: fixed;    /* منع "الارتداد" عند السحب في هواتف iPhone */
-    color: #fff;
+    touch-action: none;    /* تعطيل حركات اللمس الافتراضية للمتصفح */
 }
         
         /* Main Screen */
         .main-screen {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            padding: 20px;
-        }
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    
+    /* التعديل: تحويل min-height إلى height ثابتة */
+    height: 100vh; 
+    max-height: 100vh;
+    width: 100%;
+    
+    overflow: hidden; /* منع أي عنصر داخلي من محاولة التمرير */
+    padding: 20px;
+}
         
         .logo {
             font-size: 4rem;
@@ -132,11 +139,16 @@
         
         /* Game Screen */
         .game-screen {
-            display: none;
-            flex-direction: column;
-            height: 100vh;
-            overflow: hidden;
-        }
+    display: none; /* يتم تغييره عبر الجافا سكربت إلى flex */
+    flex-direction: column;
+    
+    /* التأكد من الارتفاع الثابت */
+    height: 100vh; 
+    max-height: 100vh;
+    width: 100%;
+    
+    overflow: hidden; /* هذا يضمن بقاء المحتوى داخل حدود الشاشة */
+}
         
         /* Top Bar */
         .top-bar {
@@ -1581,15 +1593,21 @@ div.onclick = (e) => {
         // Name modal
         document.getElementById('playerNameBtn').addEventListener('click', () => {
     const input = document.getElementById('newNameInput');
+    
+    // 1. وضع الاسم الحالي في مربع النص
     input.value = currentPlayer.name;
+    
+    // 2. إظهار المودال (النافذة المنبثقة)
     document.getElementById('nameModal').classList.add('active');
     
-    // تأخير 350ms يضمن ظهور المودال تماماً مما يجعل الجوال يتقبل فتح الكيبورد
+    // 3. تأخير بسيط لضمان ظهور النافذة ثم تحديد النص
     setTimeout(() => {
-        input.focus();
-        input.setSelectionRange(input.value.length, input.value.length); 
-        input.click(); // نقرة وهمية لزيادة التأكيد على المتصفح
-    }, 350);
+        input.focus();      // تفعيل مربع النص
+        input.select();     // تحديد النص بالكامل
+        
+        // سطر إضافي لضمان عمل التحديد على جميع أنواع الهواتف (Android/iOS)
+        input.setSelectionRange(0, input.value.length);
+    }, 350); 
 });
 
         function closeNameModal() {
