@@ -426,22 +426,30 @@ body {
         
         /* Hand Button */
         .hand-btn {
-            position: absolute;
-            top: 2px;
-            left: 2px;
-            width: 20px;
-            height: 20px;
-            background: #fbbf24;
-            border: none;
-            border-radius: 50%;
-            font-size: 0.6rem;
-            cursor: pointer;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 10;
-            transition: all 0.2s ease;
-        }
+    position: absolute;
+    top: 2px;
+    left: 2px;
+
+    background: transparent;   /* إزالة الدائرة */
+    border: none;
+    border-radius: 0;
+
+    font-size: 0.9rem;         /* حجم الإيموجي */
+    cursor: pointer;
+
+    display: none;
+    align-items: center;
+    justify-content: center;
+
+    z-index: 10;
+    padding: 0;
+}
+
+.hand-btn:active {
+    transform: scale(0.9);
+}
+
+
         
         .hand-btn:hover {
             transform: scale(1.1);
@@ -1405,6 +1413,7 @@ div.onclick = (e) => {
             }
 
             updates['activity'] = activity;
+            Object.assign(updates, clearAllVotes(data.cards));
             await db.ref(`rooms/${currentRoom}`).update(updates);
 
             // If there's a winner, show cards for 3 seconds then show winner
@@ -1528,6 +1537,7 @@ div.onclick = (e) => {
         updates[`cards/${index}/votes`] = {};
     });
 
+    Object.assign(updates, clearAllVotes(data.cards));
     await db.ref(`rooms/${currentRoom}`).update(updates);
 }
 
@@ -1733,6 +1743,17 @@ div.onclick = (e) => {
                 mapToEditPanelValues: () => new Map()
             });
         }
+
+
+        function clearAllVotes(cards) {
+    const cleared = {};
+    cards.forEach((_, i) => {
+        cleared[`cards/${i}/votes`] = {};
+    });
+    return cleared;
+}
+
+
     </script>
  <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9c11362d92fc51c2',t:'MTc2ODkzOTc4OC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
  
