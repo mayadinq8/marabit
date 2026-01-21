@@ -65,6 +65,19 @@ body {
     overflow: hidden;
 }
 
+
+.main-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    margin-top: auto;
+    margin-bottom: auto;
+
+    width: 100%;
+}
+
+
         
         .logo {
             font-size: 4rem;
@@ -778,12 +791,16 @@ body {
  </head>
  <body><!-- Main Screen -->
   <div class="main-screen" id="mainScreen">
-   <div class="logo">
-    مرابط
-   </div>
-   <p class="subtitle">لعبة الكلمات والتخمين الجماعية</p>
-   <div class="input-container"><input type="text" class="input-field" id="playerName" placeholder="أدخل اسمك" maxlength="15"> <button class="btn btn-primary" id="createGameBtn">🎮 إنشاء غرفة جديدة</button>
-   </div>
+    <div class="main-content">
+        <div class="logo">مرابط</div>
+        <p class="subtitle">لعبة الكلمات والتخمين الجماعية</p>
+        <div class="input-container">
+            <input type="text" class="input-field" id="playerName" placeholder="أدخل اسمك" maxlength="15">
+            <button class="btn btn-primary" id="createGameBtn">🎮 إنشاء غرفة جديدة</button>
+        </div>
+    </div>
+</div>
+
   </div><!-- Game Screen -->
   <div class="game-screen" id="gameScreen"><!-- Top Bar -->
    <div class="top-bar">
